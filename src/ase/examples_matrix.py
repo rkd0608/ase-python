@@ -37,6 +37,7 @@ class ExampleRunResult(BaseModel):
 
 def run_examples(example_names: list[str] | None = None) -> list[ExampleRunResult]:
     """Run the requested examples with the same commands users run manually."""
+    _require_repo_checkout()
     selected = example_names or list(SUPPORTED_EXAMPLES)
     _validate_examples(selected)
     return [_run_example(name) for name in selected]
@@ -116,3 +117,19 @@ def _validate_examples(example_names: list[str]) -> None:
     if unsupported:
         joined = ", ".join(unsupported)
         raise CLIError(f"unknown example names: {joined}")
+
+
+def _require_repo_checkout() -> None:
+    """Fail clearly when examples are invoked from a wheel install."""
+    required_paths = [
+        ROOT / "examples",
+        ROOT / "validation",
+        ROOT / "src",
+        PYTHON,
+    ]
+    if all(path.exists() for path in required_paths):
+        return
+    raise CLIError(
+        "ase examples run requires the ASE source checkout; "
+        "clone https://github.com/rkd0608/ase-python and run it from the repo root"
+    )

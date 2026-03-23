@@ -17,5 +17,5 @@ os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
 
 from ase.errors import ASEError
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 __all__ = ["ASEError", "__version__"]
