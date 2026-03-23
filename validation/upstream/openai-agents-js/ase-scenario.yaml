@@ -1,0 +1,36 @@
+scenario_id: upstream-openai-agents-js
+name: Upstream OpenAI Agents JS
+description: >
+  Runs ASE's neutral OpenAI Agents JS adapter harness against the fetched
+  upstream openai-agents-js workspace in `.upstream`.
+
+agent:
+  command:
+    - pnpm
+    - --dir
+    - .upstream/openai-agents-js
+    - exec
+    - tsx
+    - validation/upstream/openai-agents-js/ase_agent.ts
+  timeout_seconds: 60
+
+agent_runtime:
+  mode: adapter
+  framework: openai-agents-js
+  language: typescript
+  adapter_name: openai-agents-js
+  event_source: events.generated.jsonl
+
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+
+tags:
+  framework: openai-agents-js
+  source: upstream
+

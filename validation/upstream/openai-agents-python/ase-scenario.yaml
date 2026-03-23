@@ -1,0 +1,36 @@
+scenario_id: upstream-openai-agents-python
+name: Upstream OpenAI Agents Python
+description: >
+  Runs ASE's neutral OpenAI Agents adapter harness against the fetched upstream
+  openai-agents-python package in the local `.upstream` workspace.
+
+agent:
+  command:
+    - .upstream/openai-agents-python/.venv/bin/python
+    - validation/upstream/openai-agents-python/ase_agent.py
+  timeout_seconds: 60
+
+agent_runtime:
+  mode: adapter
+  framework: openai-agents
+  language: python
+  adapter_name: openai-agents-python
+  event_source: events.generated.jsonl
+
+session:
+  enabled: true
+  session_id: sess-openai-example
+
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+
+tags:
+  framework: openai-agents
+  source: upstream
+

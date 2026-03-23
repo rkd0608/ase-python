@@ -1,0 +1,20 @@
+manifest_id: mcp-python-example
+name: MCP Python Example Bundle
+adapter_name: mcp-python
+bundle_family: mcp
+bundle_version: 1.0.0
+framework: mcp
+language: python
+certification_target: mcp
+methodology_profiles: [core, mcp]
+cases:
+  - case_id: mcp-python-example
+    name: MCP Python Example
+    adapter_events: events.generated.jsonl
+    scenario: scenario.yaml
+    required_event_types: [agent_start, session_read, approval, session_write, tool_start, tool_end, agent_end]
+    required_protocols: [mcp]
+    minimum_fidelity:
+      tool_calls: 1
+      session_events: 2
+      protocol_events: 2

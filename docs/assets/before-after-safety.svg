@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320">
+  <rect width="1200" height="320" fill="#fffdf8"/>
+  <text x="40" y="48" font-size="30" font-family="Georgia, serif" fill="#1e2a24">Before vs After: Unsafe Tool Usage</text>
+  <rect x="50" y="90" width="470" height="180" rx="16" fill="#f6d4d4" stroke="#7e1f1f" stroke-width="2"/>
+  <text x="80" y="130" font-size="24" font-family="Helvetica, Arial, sans-serif" fill="#7e1f1f">Before ASE</text>
+  <text x="80" y="170" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1e2a24">A development run reaches a dangerous write path.</text>
+  <text x="80" y="205" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1e2a24">The issue is discovered late or by accident.</text>
+  <text x="80" y="240" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1e2a24">Risk becomes a deployment problem.</text>
+  <rect x="680" y="90" width="470" height="180" rx="16" fill="#d8eccb" stroke="#215a1f" stroke-width="2"/>
+  <text x="710" y="130" font-size="24" font-family="Helvetica, Arial, sans-serif" fill="#215a1f">After ASE</text>
+  <text x="710" y="170" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1e2a24">Scenario assertions or policy gates fail fast.</text>
+  <text x="710" y="205" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1e2a24">The trace shows which action crossed the boundary.</text>
+  <text x="710" y="240" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#1e2a24">The unsafe change is blocked before deployment.</text>
+  <line x1="540" y1="180" x2="650" y2="180" stroke="#1e2a24" stroke-width="4"/>
+  <polygon points="650,180 634,171 634,189" fill="#1e2a24"/>
+</svg>
+

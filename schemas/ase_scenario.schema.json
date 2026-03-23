@@ -1,0 +1,998 @@
+{
+  "$defs": {
+    "APISeed": {
+      "description": "HTTP request/response pairs for record-replay.",
+      "properties": {
+        "recordings": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Recordings",
+          "type": "array"
+        }
+      },
+      "title": "APISeed",
+      "type": "object"
+    },
+    "AdapterConfig": {
+      "description": "Declare how a non-proxy runtime integrates with ASE.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "transport": {
+          "$ref": "#/$defs/AdapterTransport",
+          "default": "jsonl-stdio"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Command",
+          "type": "array"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "timeout_seconds": {
+          "default": 60,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "AdapterConfig",
+      "type": "object"
+    },
+    "AdapterTransport": {
+      "description": "How adapter events are delivered into ASE.",
+      "enum": [
+        "jsonl-stdio",
+        "http"
+      ],
+      "title": "AdapterTransport",
+      "type": "string"
+    },
+    "AgentConfig": {
+      "description": "How ASE launches the agent subprocess.",
+      "properties": {
+        "command": {
+          "description": "Shell command to run the agent",
+          "items": {
+            "type": "string"
+          },
+          "title": "Command",
+          "type": "array"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Env",
+          "type": "object"
+        },
+        "timeout_seconds": {
+          "default": 60,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "AgentConfig",
+      "type": "object"
+    },
+    "AgentRuntimeConfig": {
+      "description": "Describe the runtime and methodology of the agent under test.",
+      "properties": {
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentRuntimeMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "framework": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Framework"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        },
+        "methodology": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Methodology"
+        },
+        "entrypoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entrypoint"
+        },
+        "adapter_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adapter Name"
+        },
+        "event_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Event Source"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "AgentRuntimeConfig",
+      "type": "object"
+    },
+    "AgentRuntimeMode": {
+      "description": "Which ASE runtime path executes the scenario.",
+      "enum": [
+        "proxy",
+        "instrumented",
+        "adapter"
+      ],
+      "title": "AgentRuntimeMode",
+      "type": "string"
+    },
+    "ApprovalFixture": {
+      "description": "Declare one approval available during the run.",
+      "properties": {
+        "approval_id": {
+          "title": "Approval Id",
+          "type": "string"
+        },
+        "actor": {
+          "default": "system",
+          "title": "Actor",
+          "type": "string"
+        },
+        "granted": {
+          "default": true,
+          "title": "Granted",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "approval_id"
+      ],
+      "title": "ApprovalFixture",
+      "type": "object"
+    },
+    "AssertionConfig": {
+      "description": "One evaluator invocation attached to a scenario.",
+      "properties": {
+        "evaluator": {
+          "title": "Evaluator",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        },
+        "pillar": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pillar"
+        }
+      },
+      "required": [
+        "evaluator"
+      ],
+      "title": "AssertionConfig",
+      "type": "object"
+    },
+    "BaselineConfig": {
+      "description": "Baseline comparison settings for regression detection.",
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/BaselineMode",
+          "default": "combined"
+        },
+        "trace_file": {
+          "title": "Trace File",
+          "type": "string"
+        },
+        "compare_tool_calls": {
+          "default": false,
+          "title": "Compare Tool Calls",
+          "type": "boolean"
+        },
+        "compare_metrics": {
+          "default": false,
+          "title": "Compare Metrics",
+          "type": "boolean"
+        },
+        "metrics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metrics",
+          "type": "array"
+        },
+        "metrics_tolerance": {
+          "default": 0.1,
+          "minimum": 0,
+          "title": "Metrics Tolerance",
+          "type": "number"
+        }
+      },
+      "required": [
+        "trace_file"
+      ],
+      "title": "BaselineConfig",
+      "type": "object"
+    },
+    "BaselineMode": {
+      "description": "How baseline comparison should behave.",
+      "enum": [
+        "tool_calls",
+        "metrics",
+        "combined"
+      ],
+      "title": "BaselineMode",
+      "type": "string"
+    },
+    "BrowserSessionSeed": {
+      "description": "Placeholder schema for future browser/session replay.",
+      "properties": {
+        "sessions": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Sessions",
+          "type": "array"
+        }
+      },
+      "title": "BrowserSessionSeed",
+      "type": "object"
+    },
+    "DatabaseSeed": {
+      "description": "SQL statements to run before a scenario starts.",
+      "properties": {
+        "statements": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Statements",
+          "type": "array"
+        }
+      },
+      "title": "DatabaseSeed",
+      "type": "object"
+    },
+    "EnvironmentConfig": {
+      "description": "Environment configuration for the scenario.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/EnvironmentKind",
+          "default": "simulated"
+        },
+        "database": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DatabaseSeed"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "api": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/APISeed"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "browser_session": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BrowserSessionSeed"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "EnvironmentConfig",
+      "type": "object"
+    },
+    "EnvironmentKind": {
+      "description": "Which backend mode a scenario uses.",
+      "enum": [
+        "real",
+        "mock",
+        "simulated"
+      ],
+      "title": "EnvironmentKind",
+      "type": "string"
+    },
+    "FilesystemEntryFixture": {
+      "description": "Represent one deterministic filesystem fixture entry.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "content": {
+          "default": "",
+          "title": "Content",
+          "type": "string"
+        },
+        "writable": {
+          "default": false,
+          "title": "Writable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "FilesystemEntryFixture",
+      "type": "object"
+    },
+    "FixturesConfig": {
+      "description": "Reusable fixtures that influence determinism and policy enforcement.",
+      "properties": {
+        "approvals": {
+          "items": {
+            "$ref": "#/$defs/ApprovalFixture"
+          },
+          "title": "Approvals",
+          "type": "array"
+        },
+        "http_recordings": {
+          "items": {
+            "$ref": "#/$defs/HTTPRecordingFixture"
+          },
+          "title": "Http Recordings",
+          "type": "array"
+        },
+        "filesystem": {
+          "items": {
+            "$ref": "#/$defs/FilesystemEntryFixture"
+          },
+          "title": "Filesystem",
+          "type": "array"
+        },
+        "queue_messages": {
+          "items": {
+            "$ref": "#/$defs/QueueMessageFixture"
+          },
+          "title": "Queue Messages",
+          "type": "array"
+        },
+        "webhook_events": {
+          "items": {
+            "$ref": "#/$defs/WebhookEventFixture"
+          },
+          "title": "Webhook Events",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "FixturesConfig",
+      "type": "object"
+    },
+    "HTTPRecordingFixture": {
+      "description": "Store one inline request/response replay fixture.",
+      "properties": {
+        "request": {
+          "additionalProperties": true,
+          "title": "Request",
+          "type": "object"
+        },
+        "response": {
+          "additionalProperties": true,
+          "title": "Response",
+          "type": "object"
+        }
+      },
+      "title": "HTTPRecordingFixture",
+      "type": "object"
+    },
+    "HandoffConfig": {
+      "description": "Declare expected multi-agent handoff behavior.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "expected_edges": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Expected Edges",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "HandoffConfig",
+      "type": "object"
+    },
+    "HumanFeedbackConfig": {
+      "description": "Declare expected human feedback checkpoints.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "required_actors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Actors",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "HumanFeedbackConfig",
+      "type": "object"
+    },
+    "InterAgentConfig": {
+      "description": "Declare non-local inter-agent protocol expectations.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protocol"
+        },
+        "topology": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topology"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "InterAgentConfig",
+      "type": "object"
+    },
+    "MCPConfig": {
+      "description": "Declare MCP servers and resources involved in the scenario.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "servers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Servers",
+          "type": "array"
+        },
+        "resources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "MCPConfig",
+      "type": "object"
+    },
+    "PolicyConfig": {
+      "description": "One policy rule compiled into an assertion at evaluation time.",
+      "properties": {
+        "evaluator": {
+          "title": "Evaluator",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        },
+        "policy_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Policy Id"
+        },
+        "pillar": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "safety",
+          "title": "Pillar"
+        }
+      },
+      "required": [
+        "evaluator"
+      ],
+      "title": "PolicyConfig",
+      "type": "object"
+    },
+    "QueueMessageFixture": {
+      "description": "Represent one deterministic queue message.",
+      "properties": {
+        "queue": {
+          "title": "Queue",
+          "type": "string"
+        },
+        "body": {
+          "additionalProperties": true,
+          "title": "Body",
+          "type": "object"
+        },
+        "message_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message Id"
+        }
+      },
+      "required": [
+        "queue"
+      ],
+      "title": "QueueMessageFixture",
+      "type": "object"
+    },
+    "RealtimeConfig": {
+      "description": "Declare realtime transport expectations.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "transport": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Transport"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "RealtimeConfig",
+      "type": "object"
+    },
+    "SessionConfig": {
+      "description": "Capture session expectations for stateful agents.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "stateful": {
+          "default": true,
+          "title": "Stateful",
+          "type": "boolean"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "SessionConfig",
+      "type": "object"
+    },
+    "StreamingConfig": {
+      "description": "Declare streaming-output expectations.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "expected_chunk_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Chunk Count"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "StreamingConfig",
+      "type": "object"
+    },
+    "WebhookEventFixture": {
+      "description": "Represent one deterministic webhook event.",
+      "properties": {
+        "endpoint": {
+          "title": "Endpoint",
+          "type": "string"
+        },
+        "method": {
+          "default": "POST",
+          "title": "Method",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Event Id"
+        }
+      },
+      "required": [
+        "endpoint"
+      ],
+      "title": "WebhookEventFixture",
+      "type": "object"
+    }
+  },
+  "description": "Complete definition of a single ASE scenario.",
+  "properties": {
+    "spec_version": {
+      "default": 1,
+      "title": "Spec Version",
+      "type": "integer"
+    },
+    "scenario_id": {
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "agent": {
+      "$ref": "#/$defs/AgentConfig"
+    },
+    "agent_runtime": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AgentRuntimeConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "adapter": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AdapterConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "environment": {
+      "$ref": "#/$defs/EnvironmentConfig"
+    },
+    "fixtures": {
+      "$ref": "#/$defs/FixturesConfig"
+    },
+    "session": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SessionConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "handoffs": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HandoffConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "human_feedback": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HumanFeedbackConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "streaming": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StreamingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "realtime": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RealtimeConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "mcp": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MCPConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "inter_agent": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/InterAgentConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "assertions": {
+      "items": {
+        "$ref": "#/$defs/AssertionConfig"
+      },
+      "title": "Assertions",
+      "type": "array"
+    },
+    "policies": {
+      "items": {
+        "$ref": "#/$defs/PolicyConfig"
+      },
+      "title": "Policies",
+      "type": "array"
+    },
+    "baselines": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BaselineConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "tags": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "object"
+    },
+    "run_metadata": {
+      "additionalProperties": true,
+      "title": "Run Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "name",
+    "agent"
+  ],
+  "title": "ScenarioConfig",
+  "type": "object"
+}

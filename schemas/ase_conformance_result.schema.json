@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ase.dev/schemas/ase_conformance_result.schema.json",
+  "title": "ASE Conformance Result",
+  "type": "object",
+  "required": [
+    "manifest_id",
+    "manifest_name",
+    "adapter_name",
+    "bundle_family",
+    "bundle_version",
+    "certification_level",
+    "passed",
+    "checks",
+    "generated_at_ms"
+  ],
+  "properties": {
+    "spec_version": { "type": "integer", "minimum": 1, "default": 1 },
+    "manifest_id": { "type": "string" },
+    "manifest_name": { "type": "string" },
+    "adapter_name": { "type": "string" },
+    "adapter_version": { "type": ["string", "null"] },
+    "bundle_family": { "type": "string" },
+    "bundle_version": { "type": "string" },
+    "framework": { "type": ["string", "null"] },
+    "language": { "type": ["string", "null"] },
+    "certification_level": {
+      "type": "string",
+      "enum": ["core", "stateful", "multi_agent", "mcp", "realtime"]
+    },
+    "passed": { "type": "boolean" },
+    "methodology_profiles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "case_id", "passed", "message"],
+        "properties": {
+          "check_id": { "type": "string" },
+          "case_id": { "type": "string" },
+          "passed": { "type": "boolean" },
+          "message": { "type": "string" },
+          "details": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "generated_at_ms": { "type": "number" },
+    "report_digest_sha256": { "type": ["string", "null"] },
+    "signature_algorithm": { "type": ["string", "null"] },
+    "signature": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

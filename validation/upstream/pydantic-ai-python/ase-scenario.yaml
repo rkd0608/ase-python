@@ -1,0 +1,36 @@
+scenario_id: upstream-pydantic-ai-python
+name: Upstream PydanticAI Python
+description: >
+  Runs ASE's neutral PydanticAI adapter harness against the fetched upstream
+  pydantic-ai package in the local `.upstream` workspace.
+
+agent:
+  command:
+    - .upstream/pydantic-ai/.venv/bin/python
+    - validation/upstream/pydantic-ai-python/ase_agent.py
+  timeout_seconds: 60
+
+agent_runtime:
+  mode: adapter
+  framework: pydantic-ai
+  language: python
+  adapter_name: pydantic-ai-python
+  event_source: events.generated.jsonl
+
+session:
+  enabled: true
+  session_id: sess-pydantic-example
+
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+
+tags:
+  framework: pydantic-ai
+  source: upstream
+

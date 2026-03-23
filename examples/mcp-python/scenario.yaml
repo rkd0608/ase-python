@@ -1,0 +1,23 @@
+scenario_id: mcp-python-example
+name: MCP Python Example
+agent:
+  command: [.venv311/bin/python, examples/mcp-python/agent.py]
+agent_runtime:
+  mode: adapter
+  framework: mcp
+  language: python
+  adapter_name: mcp-python
+  event_source: events.generated.jsonl
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: filesystem
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+policies:
+  - evaluator: approval_required
+    policy_id: require-mcp-write-approval
+    params:
+      approval_id: mcp-write
+      target_contains: mcp://filesystem/orders/ord-001

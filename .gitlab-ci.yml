@@ -1,0 +1,72 @@
+stages:
+  - certify
+  - matrix
+  - examples
+
+variables:
+  PIP_CONSTRAINT: constraints/py311.txt
+
+certify_launch_bundles:
+  image: python:3.11
+  stage: certify
+  script:
+    - pip install -e ".[dev]"
+    - ase certify conformance/launch/openai-agents-python/manifest.yaml --out-file openai-agents-python.cert.json
+    - ase certify conformance/launch/langgraph-python/manifest.yaml --out-file langgraph-python.cert.json
+    - ase certify conformance/launch/pydantic-ai-python/manifest.yaml --out-file pydantic-ai-python.cert.json
+    - ase certify conformance/launch/openai-agents-typescript/manifest.yaml --out-file openai-agents-typescript.cert.json
+    - ase certify conformance/bundles/core/openai-agents-python/manifest.yaml --out-file core-openai-agents-python.cert.json
+    - ase certify conformance/bundles/stateful/pydantic-ai-python/manifest.yaml --out-file stateful-pydantic-ai-python.cert.json
+    - ase certify conformance/bundles/multi_agent/langgraph-python/manifest.yaml --out-file multi-agent-langgraph-python.cert.json
+    - ase certify conformance/bundles/realtime/openai-agents-typescript/manifest.yaml --out-file realtime-openai-agents-typescript.cert.json
+    - ase certify conformance/bundles/mcp/mcp-python/manifest.yaml --out-file mcp-python.cert.json
+  artifacts:
+    when: always
+    paths:
+      - "*.cert.json"
+
+official_adapters_python:
+  image: python:3.12
+  stage: examples
+  parallel:
+    matrix:
+      - FRAMEWORK: ["openai-agents-python", "langgraph-python", "pydantic-ai-python"]
+  script:
+    - pip install -e ".[dev]"
+    - python scripts/bootstrap_upstream_validations.py --framework "$FRAMEWORK"
+    - ase test "validation/upstream/$FRAMEWORK/ase-scenario.yaml"
+    - ase certify "validation/upstream/$FRAMEWORK/ase-manifest.yaml" --out-file "$FRAMEWORK.official.cert.json"
+  artifacts:
+    when: always
+    paths:
+      - "*.official.cert.json"
+
+official_adapters_typescript:
+  image: node:22-bookworm
+  stage: examples
+  before_script:
+    - apt-get update && apt-get install -y python3.11 python3-pip
+  script:
+    - python3.11 -m pip install -e ".[dev]"
+    - python3.11 scripts/bootstrap_upstream_validations.py --framework openai-agents-js
+    - ase test validation/upstream/openai-agents-js/ase-scenario.yaml
+    - ase certify validation/upstream/openai-agents-js/ase-manifest.yaml --out-file openai-agents-js.official.cert.json
+  artifacts:
+    when: always
+    paths:
+      - "*.official.cert.json"
+
+compatibility_matrix:
+  image: python:3.11
+  stage: matrix
+  needs:
+    - certify_launch_bundles
+    - official_adapters_python
+    - official_adapters_typescript
+  script:
+    - pip install -e ".[dev]"
+    - python scripts/generate_compatibility_matrix.py docs/compatibility-matrix.generated.md *.cert.json
+  artifacts:
+    when: always
+    paths:
+      - docs/compatibility-matrix.generated.md

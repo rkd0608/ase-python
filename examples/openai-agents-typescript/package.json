@@ -1,0 +1,9 @@
+{
+  "name": "ase-openai-agents-typescript-example",
+  "private": true,
+  "type": "module",
+  "description": "ASE release-candidate example backed by the official @openai/agents package",
+  "dependencies": {
+    "@openai/agents": "^0.7.2"
+  }
+}

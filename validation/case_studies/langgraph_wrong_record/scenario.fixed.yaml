@@ -1,0 +1,40 @@
+scenario_id: case-langgraph-wrong-record-fixed
+name: LangGraph Wrong Record (Fixed)
+description: >
+  Demonstrates the corrected LangGraph mutation after ASE exposed the wrong
+  refund target.
+
+agent:
+  command:
+    - .upstream/langgraph/.venv/bin/python
+    - validation/case_studies/langgraph_wrong_record/ase_agent.py
+    - --variant
+    - fixed
+  timeout_seconds: 60
+
+agent_runtime:
+  mode: adapter
+  framework: langgraph
+  language: python
+  adapter_name: langgraph-python
+  event_source: events.fixed.jsonl
+
+handoffs:
+  enabled: true
+  expected_edges:
+    - from_agent_id: planner-agent
+      to_agent_id: executor-agent
+
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+      target_contains: ord-001
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+
+tags:
+  case_study: wrong-record
+  variant: fixed

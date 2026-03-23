@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ase-python"
+version = "0.1.0"
+description = "Agent Simulation Engine — pytest for AI agent tool calls"
+requires-python = ">=3.11"
+readme = { file = "README_PYPI.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+keywords = ["ai agents", "testing", "evaluation", "trace", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Environment :: Console",
+]
+dependencies = [
+    "pydantic>=2.0",
+    "typer>=0.9",
+    "rich>=13.0",
+    "httpx>=0.27",
+    "mitmproxy>=10.0",
+    "pyyaml>=6.0",
+    "jsonschema>=4.0",
+    "duckdb>=1.0",
+    "ulid-py>=1.1.0",
+    "structlog>=24.0",
+    "aiosqlite>=0.20",
+]
+
+[project.scripts]
+ase = "ase.cli.main:app"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ase"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-p no:langsmith.pytest_plugin"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+pythonpath = ["src"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+mypy_path = "src"
+exclude = ["tests/"]
+
+[[tool.mypy.overrides]]
+module = ["mitmproxy.*"]
+ignore_errors = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "ANN", "B", "SIM"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+"examples/**" = ["ANN"]

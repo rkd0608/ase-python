@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a reproducible defect in ASE.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is failing, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Exact commands, scenario files, and environment details.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Python version, OS, ASE install mode, and any framework versions involved.
+    validations:
+      required: true
+

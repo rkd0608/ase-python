@@ -1,0 +1,126 @@
+name: certify
+
+on:
+  push:
+  pull_request:
+
+env:
+  PIP_CONSTRAINT: constraints/py311.txt
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        manifest:
+          - conformance/launch/openai-agents-python/manifest.yaml
+          - conformance/launch/langgraph-python/manifest.yaml
+          - conformance/launch/pydantic-ai-python/manifest.yaml
+          - conformance/launch/openai-agents-typescript/manifest.yaml
+          - conformance/bundles/core/openai-agents-python/manifest.yaml
+          - conformance/bundles/stateful/pydantic-ai-python/manifest.yaml
+          - conformance/bundles/multi_agent/langgraph-python/manifest.yaml
+          - conformance/bundles/realtime/openai-agents-typescript/manifest.yaml
+          - conformance/bundles/mcp/mcp-python/manifest.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ASE
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Certify launch bundle
+        run: |
+          ase certify "${{ matrix.manifest }}" --out-file "$(basename "${{ matrix.manifest }}").cert.json"
+      - name: Upload certification artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-bundles-${{ strategy.job-index }}
+          path: "*.cert.json"
+
+  official-adapters-python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        framework:
+          - openai-agents-python
+          - langgraph-python
+          - pydantic-ai-python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ASE
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Bootstrap upstream Python framework
+        run: |
+          python scripts/bootstrap_upstream_validations.py --framework "${{ matrix.framework }}"
+      - name: Run and certify upstream Python adapter
+        run: |
+          ase test "validation/upstream/${{ matrix.framework }}/ase-scenario.yaml"
+          ase certify "validation/upstream/${{ matrix.framework }}/ase-manifest.yaml" --out-file "${{ matrix.framework }}.official.cert.json"
+      - name: Upload Python adapter certifications
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-official-python-${{ matrix.framework }}
+          path: "*.official.cert.json"
+
+  official-adapters-mixed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install ASE
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Bootstrap upstream TypeScript framework
+        run: |
+          python scripts/bootstrap_upstream_validations.py --framework openai-agents-js
+      - name: Run and certify the upstream TypeScript adapter
+        run: |
+          ase test validation/upstream/openai-agents-js/ase-scenario.yaml
+          ase certify validation/upstream/openai-agents-js/ase-manifest.yaml --out-file openai-agents-js.official.cert.json
+      - name: Upload TypeScript adapter certification
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-official-typescript
+          path: "*.official.cert.json"
+
+  compatibility-matrix:
+    needs:
+      - certify
+      - official-adapters-python
+      - official-adapters-mixed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ASE
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Download certification artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: certification-artifacts
+      - name: Generate compatibility matrix
+        run: |
+          python scripts/generate_compatibility_matrix.py docs/compatibility-matrix.generated.md certification-artifacts
+      - name: Upload compatibility matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-matrix
+          path: docs/compatibility-matrix.generated.md

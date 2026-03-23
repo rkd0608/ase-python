@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ase.dev/schemas/ase_conformance_manifest.schema.json",
+  "title": "ASE Conformance Manifest",
+  "type": "object",
+  "required": ["manifest_id", "name", "adapter_name", "cases"],
+  "properties": {
+    "spec_version": { "type": "integer", "minimum": 1, "default": 1 },
+    "manifest_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "adapter_name": { "type": "string", "minLength": 1 },
+    "adapter_version": { "type": ["string", "null"] },
+    "bundle_family": { "type": "string", "minLength": 1 },
+    "bundle_version": { "type": "string" },
+    "framework": { "type": ["string", "null"] },
+    "language": { "type": ["string", "null"] },
+    "certification_target": {
+      "type": "string",
+      "enum": ["core", "stateful", "multi_agent", "mcp", "realtime"]
+    },
+    "methodology_profiles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["case_id", "name", "adapter_events"],
+        "properties": {
+          "case_id": { "type": "string" },
+          "name": { "type": "string" },
+          "adapter_events": { "type": "string" },
+          "scenario": { "type": ["string", "null"] },
+          "required_event_types": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "required_protocols": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "minimum_fidelity": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "methodology_profiles": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metadata": { "type": "object" }
+  },
+  "additionalProperties": false
+}

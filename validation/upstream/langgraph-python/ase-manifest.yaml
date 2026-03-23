@@ -1,0 +1,21 @@
+manifest_id: upstream-langgraph-python
+name: Upstream LangGraph Python
+adapter_name: langgraph-python
+adapter_version: local-upstream
+bundle_family: multi_agent
+bundle_version: 1.0.0
+framework: langgraph
+language: python
+certification_target: multi_agent
+methodology_profiles: [core, multi_agent]
+cases:
+  - case_id: upstream-langgraph-python
+    name: Upstream LangGraph Python
+    adapter_events: events.generated.jsonl
+    scenario: ase-scenario.yaml
+    required_event_types: [agent_start, handoff, tool_start, tool_end, agent_end]
+    minimum_fidelity:
+      tool_calls: 1
+      handoff_edges: 1
+      agent_graph_nodes: 2
+

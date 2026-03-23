@@ -1,0 +1,36 @@
+scenario_id: case-pydantic-missing-approval-fixed
+name: PydanticAI Missing Approval (Fixed)
+description: >
+  Demonstrates the corrected PydanticAI flow after ASE required an approval
+  event before the refund call.
+
+agent:
+  command:
+    - .upstream/pydantic-ai/.venv/bin/python
+    - validation/case_studies/pydantic_missing_approval/ase_agent.py
+    - --variant
+    - fixed
+  timeout_seconds: 60
+
+agent_runtime:
+  mode: adapter
+  framework: pydantic-ai
+  language: python
+  adapter_name: pydantic-ai-python
+  event_source: events.fixed.jsonl
+
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+
+policies:
+  - evaluator: approval_required
+    params:
+      approval_id: refund-approval
+      target_contains: refunds
+
+tags:
+  case_study: missing-approval
+  variant: fixed

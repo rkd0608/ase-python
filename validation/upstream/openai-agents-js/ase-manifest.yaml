@@ -1,0 +1,18 @@
+manifest_id: upstream-openai-agents-js
+name: Upstream OpenAI Agents JS
+adapter_name: openai-agents-js
+adapter_version: local-upstream
+bundle_family: core
+bundle_version: 1.0.0
+framework: openai-agents-js
+language: typescript
+certification_target: core
+methodology_profiles: [core]
+cases:
+  - case_id: upstream-openai-agents-js
+    name: Upstream OpenAI Agents JS
+    adapter_events: events.generated.jsonl
+    scenario: ase-scenario.yaml
+    required_event_types: [agent_start, tool_start, tool_end, agent_end]
+    minimum_fidelity:
+      tool_calls: 1
