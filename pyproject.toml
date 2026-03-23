@@ -19,12 +19,6 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Environment :: Console",
 ]
-[project.urls]
-Homepage = "https://github.com/rkd0608/ase-python"
-Repository = "https://github.com/rkd0608/ase-python"
-Documentation = "https://github.com/rkd0608/ase-python/tree/main/docs"
-Issues = "https://github.com/rkd0608/ase-python/issues"
-
 dependencies = [
     "pydantic>=2.0",
     "typer>=0.9",
@@ -38,6 +32,12 @@ dependencies = [
     "structlog>=24.0",
     "aiosqlite>=0.20",
 ]
+
+[project.urls]
+Homepage = "https://github.com/rkd0608/ase-python"
+Repository = "https://github.com/rkd0608/ase-python"
+Documentation = "https://github.com/rkd0608/ase-python/tree/main/docs"
+Issues = "https://github.com/rkd0608/ase-python/issues"
 
 [project.scripts]
 ase = "ase.cli.main:app"
