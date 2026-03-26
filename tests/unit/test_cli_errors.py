@@ -1,19 +1,11 @@
 from __future__ import annotations
 
-import enum
 import re
 from pathlib import Path
 
 from typer.testing import CliRunner
 
-if not hasattr(enum, "StrEnum"):
-    class StrEnum(str, enum.Enum):
-        pass
-
-    enum.StrEnum = StrEnum
-
 from ase.cli.main import app
-
 
 runner = CliRunner()
 
@@ -23,7 +15,9 @@ def _combined_output(result) -> str:
     return f"{result.output}{exception}"
 
 
-def _assert_helpful_error(result, *, expected: str | None = None, pattern: str | None = None) -> None:
+def _assert_helpful_error(
+    result, *, expected: str | None = None, pattern: str | None = None
+) -> None:
     output = _combined_output(result)
     assert result.exit_code != 0, output
     assert "Traceback" not in output
