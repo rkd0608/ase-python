@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import importlib
 import inspect
 from pathlib import Path
@@ -136,10 +137,8 @@ def test_ddl_and_broad_reads_are_recorded_and_flaggable(tmp_path: Path) -> None:
             "ALTER TABLE customers ADD COLUMN email TEXT",
             "SELECT * FROM customers",
         ):
-            try:
+            with contextlib.suppress(Exception):
                 await _call_first(db, ("execute", "query", "run_sql", "run_query"), stmt)
-            except Exception:
-                pass
 
         access_log = getattr(db, "access_log", None)
         if access_log is None:
