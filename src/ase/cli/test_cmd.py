@@ -12,7 +12,7 @@ from rich.console import Console
 from ase.adapters.protocol import read_and_verify
 from ase.adapters.replay import trace_from_adapter_events
 from ase.config.model import OutputFormat
-from ase.errors import CLIError
+from ase.errors import ASEError, CLIError
 from ase.evaluation.engine import EvaluationEngine
 from ase.evaluation.trace_summary import attach_summary
 from ase.scenario.model import AgentRuntimeMode, ScenarioConfig
@@ -50,7 +50,7 @@ def _run_all(paths: list[Path], store: TraceStore, *, fail_fast: bool) -> None:
     for path in paths:
         try:
             _run_one(path, store)
-        except CLIError as exc:
+        except ASEError as exc:
             failures += 1
             _console.print(f"[red]{exc}[/red]")
             if fail_fast:

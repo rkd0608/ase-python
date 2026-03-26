@@ -25,18 +25,22 @@ def run(
     ] = OutputFormat.TERMINAL,
 ) -> None:
     """Compare two traces by stable runtime, evaluation, and metric fields."""
-    baseline_trace = _load_trace(baseline)
-    candidate_trace = _load_trace(candidate)
-    diff = _build_diff(baseline_trace, candidate_trace)
-    if output == OutputFormat.JSON:
-        _console.print(json.dumps(diff, indent=2))
-        return
-    if output == OutputFormat.MARKDOWN:
-        _console.print(_to_markdown(diff))
-        return
-    if output != OutputFormat.TERMINAL:
-        raise CLIError(f"unsupported compare output format: {output}")
-    _console.print(_to_terminal_text(diff))
+    try:
+        baseline_trace = _load_trace(baseline)
+        candidate_trace = _load_trace(candidate)
+        diff = _build_diff(baseline_trace, candidate_trace)
+        if output == OutputFormat.JSON:
+            _console.print(json.dumps(diff, indent=2))
+            return
+        if output == OutputFormat.MARKDOWN:
+            _console.print(_to_markdown(diff))
+            return
+        if output != OutputFormat.TERMINAL:
+            raise CLIError(f"unsupported compare output format: {output}")
+        _console.print(_to_terminal_text(diff))
+    except (CLIError, TraceSerializationError) as exc:
+        _console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
 
 
 def _load_trace(path: Path) -> Trace:

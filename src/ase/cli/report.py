@@ -28,13 +28,17 @@ def run(
     ] = None,
 ) -> None:
     """Render a trace in a compact operator-facing or machine-readable format."""
-    trace = _load_trace(trace_file)
-    rendered = _render_trace(trace, output)
-    if out_file is not None:
-        suffix = "\n" if not rendered.endswith("\n") else ""
-        out_file.write_text(rendered + suffix, encoding="utf-8")
-        return
-    _console.print(rendered)
+    try:
+        trace = _load_trace(trace_file)
+        rendered = _render_trace(trace, output)
+        if out_file is not None:
+            suffix = "\n" if not rendered.endswith("\n") else ""
+            out_file.write_text(rendered + suffix, encoding="utf-8")
+            return
+        _console.print(rendered)
+    except (CLIError, TraceSerializationError) as exc:
+        _console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
 
 
 def _load_trace(path: Path) -> Trace:
