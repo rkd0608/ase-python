@@ -1,4 +1,4 @@
-"""Source-backed conformance package that composes with recovery overlays."""
+"""Source-backed conformance package."""
 
 from __future__ import annotations
 

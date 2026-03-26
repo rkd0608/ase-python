@@ -1,4 +1,4 @@
-"""Source-backed scenario package that composes with recovery overlays."""
+"""Source-backed scenario package."""
 
 from __future__ import annotations
 

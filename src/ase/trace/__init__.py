@@ -1,4 +1,4 @@
-"""Source-backed trace package that composes with recovery overlays."""
+"""Source-backed trace package."""
 
 from __future__ import annotations
 

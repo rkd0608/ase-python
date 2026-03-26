@@ -1,4 +1,4 @@
-"""Source-backed CLI package that composes with recovery overlays."""
+"""Source-backed CLI package."""
 
 from __future__ import annotations
 
