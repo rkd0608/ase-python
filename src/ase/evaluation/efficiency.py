@@ -114,6 +114,90 @@ class CostProjectionEvaluator(Evaluator):
         )
 
 
+class SolveRateEvaluator(Evaluator):
+    """Measures efficiency as ratio of ideal tool-call steps to actual steps."""
+
+    @property
+    def name(self) -> str:
+        return "solve_rate"
+
+    @property
+    def pillar(self) -> Pillar:
+        return Pillar.EFFICIENCY
+
+    def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
+        del context
+        resolved = _trace(trace)
+        ideal_steps = _required_int(params, "ideal_steps")
+        actual_steps = resolved.metrics.total_tool_calls
+        score = _ratio_score(ideal_steps, actual_steps)
+        return AssertionResult(
+            evaluator=self.name,
+            pillar=self.pillar,
+            passed=score >= 70.0,
+            score=score,
+            message=f"solve rate ideal/actual = {ideal_steps}/{actual_steps} ({score:.2f})",
+            details={"ideal_steps": ideal_steps, "actual_steps": actual_steps},
+        )
+
+
+class LatencyRatioEvaluator(Evaluator):
+    """Measures runtime efficiency using target latency vs observed latency."""
+
+    @property
+    def name(self) -> str:
+        return "latency_ratio"
+
+    @property
+    def pillar(self) -> Pillar:
+        return Pillar.EFFICIENCY
+
+    def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
+        del context
+        resolved = _trace(trace)
+        target_ms = _required_float(params, "target_ms")
+        actual_ms = float(resolved.metrics.total_duration_ms)
+        score = _ratio_score(target_ms, actual_ms)
+        return AssertionResult(
+            evaluator=self.name,
+            pillar=self.pillar,
+            passed=score >= 70.0,
+            score=score,
+            message=f"latency ratio target/actual = {target_ms:.2f}/{actual_ms:.2f} ({score:.2f})",
+            details={"target_ms": target_ms, "actual_ms": actual_ms},
+        )
+
+
+class CostEfficiencyEvaluator(Evaluator):
+    """Scores token consumption efficiency against a configurable token budget."""
+
+    @property
+    def name(self) -> str:
+        return "cost_efficiency"
+
+    @property
+    def pillar(self) -> Pillar:
+        return Pillar.EFFICIENCY
+
+    def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
+        del context
+        resolved = _trace(trace)
+        budget_tokens = _required_int(params, "budget_tokens")
+        actual_tokens = resolved.metrics.total_tokens_used
+        score = _ratio_score(budget_tokens, actual_tokens)
+        return AssertionResult(
+            evaluator=self.name,
+            pillar=self.pillar,
+            passed=score >= 70.0,
+            score=score,
+            message=(
+                "token efficiency budget/actual = "
+                f"{budget_tokens}/{actual_tokens} ({score:.2f})"
+            ),
+            details={"budget_tokens": budget_tokens, "actual_tokens": actual_tokens},
+        )
+
+
 def _required_int(params: dict[str, Any], key: str) -> int:
     """Parse integer limits with a stable configuration error."""
     if not isinstance(params, dict):
@@ -178,3 +262,12 @@ def _invalid_params_result(
         outcome=AssertionOutcome.ERROR,
         details={"params": dict(params or {})},
     )
+
+
+def _ratio_score(ideal: float, actual: float) -> float:
+    """Compute an efficiency percentage capped at 100 with zero-safe semantics."""
+    if ideal <= 0:
+        return 100.0
+    if actual <= 0:
+        return 100.0
+    return min(100.0, (ideal / actual) * 100.0)

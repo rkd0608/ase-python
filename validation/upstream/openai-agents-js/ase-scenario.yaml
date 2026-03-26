@@ -31,6 +31,6 @@ assertions:
       maximum: 1
 
 tags:
-  framework: openai-agents-js
-  source: upstream
+  - framework-openai-agents-js
+  - source-upstream
 

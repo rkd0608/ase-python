@@ -102,7 +102,20 @@ def _builtin_evaluators() -> list[Evaluator]:
     evaluators.extend(
         _load_optional_evaluators(
             "ase.evaluation.efficiency",
-            ["MaxToolCallsEvaluator", "MaxTokensEvaluator", "CostProjectionEvaluator"],
+            [
+                "MaxToolCallsEvaluator",
+                "MaxTokensEvaluator",
+                "CostProjectionEvaluator",
+                "SolveRateEvaluator",
+                "LatencyRatioEvaluator",
+                "CostEfficiencyEvaluator",
+            ],
+        )
+    )
+    evaluators.extend(
+        _load_optional_evaluators(
+            "ase.evaluation.trajectory",
+            ["TrajectoryEvaluator"],
         )
     )
     evaluators.extend(

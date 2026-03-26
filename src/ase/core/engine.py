@@ -94,7 +94,7 @@ class SimulationEngine:
         recorder = Recorder(
             scenario_id=scenario.scenario_id,
             scenario_name=scenario.name,
-            tags=scenario.tags,
+            tags={tag: "true" for tag in scenario.tags},
         )
         self._seed_trace(recorder, scenario)
         if scenario.runtime_mode != AgentRuntimeMode.PROXY:

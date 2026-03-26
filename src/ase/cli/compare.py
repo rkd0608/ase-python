@@ -67,6 +67,11 @@ def _build_diff(baseline: Trace, candidate: Trace) -> dict[str, Any]:
         set(base_eval.failing_evaluators if base_eval else [])
         - set(cand_eval.failing_evaluators if cand_eval else [])
     )
+    baseline_trajectory = _trajectory_sequence(baseline)
+    candidate_trajectory = _trajectory_sequence(candidate)
+    baseline_match = _trajectory_match_percent(baseline_trajectory, candidate_trajectory)
+    candidate_match = _trajectory_match_percent(candidate_trajectory, baseline_trajectory)
+    trajectory_changed = baseline_trajectory != candidate_trajectory
     return {
         "baseline_trace_id": baseline.trace_id,
         "candidate_trace_id": candidate.trace_id,
@@ -110,40 +115,93 @@ def _build_diff(baseline: Trace, candidate: Trace) -> dict[str, Any]:
                 candidate.metrics.tool_call_breakdown,
             ],
         },
+        "same_scenario": baseline.scenario_id == candidate.scenario_id,
+        "trajectory": {
+            "baseline": baseline_trajectory,
+            "candidate": candidate_trajectory,
+            "baseline_match_percent": baseline_match,
+            "candidate_match_percent": candidate_match,
+            "changed": trajectory_changed,
+        },
     }
 
 
 def _to_terminal_text(diff: dict[str, Any]) -> str:
     """Render a compact diff for direct terminal use."""
     metrics = diff["metrics"]
-    return "\n".join(
-        [
-            f"baseline: {diff['baseline_trace_id']}",
-            f"candidate: {diff['candidate_trace_id']}",
-            f"scenario_ids: {diff['scenario_ids'][0]} -> {diff['scenario_ids'][1]}",
-            f"runtime_mode: {diff['runtime_mode'][0]} -> {diff['runtime_mode'][1]}",
-            f"framework: {diff['framework'][0]} -> {diff['framework'][1]}",
-            f"status: {diff['status'][0]} -> {diff['status'][1]}",
-            f"evaluation: {diff['evaluation_passed'][0]} -> {diff['evaluation_passed'][1]}",
-            f"ase_score_delta: {diff['ase_score_delta']:.2f}",
-            f"tool_calls: {metrics['tool_calls'][0]} -> {metrics['tool_calls'][1]}",
-            f"tokens: {metrics['tokens'][0]} -> {metrics['tokens'][1]}",
-        ]
-    )
+    lines = [
+        "◆ ASE Compare",
+        f"baseline: {diff['baseline_trace_id']}",
+        f"candidate: {diff['candidate_trace_id']}",
+        f"scenario_ids: {diff['scenario_ids'][0]} -> {diff['scenario_ids'][1]}",
+        f"runtime_mode: {diff['runtime_mode'][0]} -> {diff['runtime_mode'][1]}",
+        f"framework: {diff['framework'][0]} -> {diff['framework'][1]}",
+        f"status: {diff['status'][0]} -> {diff['status'][1]}",
+        f"evaluation: {diff['evaluation_passed'][0]} -> {diff['evaluation_passed'][1]}",
+        f"ase_score_delta: {diff['ase_score_delta']:.2f}",
+        "Efficiency Comparison",
+        f"  Steps (avg): {metrics['tool_calls'][0]} -> {metrics['tool_calls'][1]}",
+        f"  Tokens (avg): {metrics['tokens'][0]} -> {metrics['tokens'][1]}",
+    ]
+    if diff["same_scenario"]:
+        trajectory = diff["trajectory"]
+        lines.append(
+            "  Trajectory Match: "
+            f"{trajectory['baseline_match_percent']:.1f}% -> "
+            f"{trajectory['candidate_match_percent']:.1f}%"
+        )
+        if trajectory["changed"]:
+            lines.extend(
+                [
+                    "Trajectory Diffs (1 scenario changed)",
+                    f"  {diff['scenario_ids'][0]}:",
+                    f"    baseline: {trajectory['baseline']}",
+                    f"    candidate: {trajectory['candidate']}",
+                ]
+            )
+    else:
+        lines.append("Trajectory Diffs: skipped (scenarios differ between baseline and candidate)")
+    return "\n".join(lines)
 
 
 def _to_markdown(diff: dict[str, Any]) -> str:
     """Render a short Markdown diff for CI and review surfaces."""
     metrics = diff["metrics"]
-    return "\n".join(
-        [
-            "# ASE Trace Diff",
-            "",
-            f"- Baseline: `{diff['baseline_trace_id']}`",
-            f"- Candidate: `{diff['candidate_trace_id']}`",
-            f"- Status: `{diff['status'][0]}` -> `{diff['status'][1]}`",
-            f"- Evaluation: `{diff['evaluation_passed'][0]}` -> `{diff['evaluation_passed'][1]}`",
-            f"- ASE score delta: `{diff['ase_score_delta']:.2f}`",
-            f"- Tool calls: `{metrics['tool_calls'][0]}` -> `{metrics['tool_calls'][1]}`",
-        ]
-    )
+    lines = [
+        "# ASE Trace Diff",
+        "",
+        f"- Baseline: `{diff['baseline_trace_id']}`",
+        f"- Candidate: `{diff['candidate_trace_id']}`",
+        f"- Status: `{diff['status'][0]}` -> `{diff['status'][1]}`",
+        f"- Evaluation: `{diff['evaluation_passed'][0]}` -> `{diff['evaluation_passed'][1]}`",
+        f"- ASE score delta: `{diff['ase_score_delta']:.2f}`",
+        f"- Tool calls: `{metrics['tool_calls'][0]}` -> `{metrics['tool_calls'][1]}`",
+    ]
+    if diff["same_scenario"]:
+        lines.append(
+            "- Trajectory match: "
+            f"`{diff['trajectory']['baseline_match_percent']:.1f}%` -> "
+            f"`{diff['trajectory']['candidate_match_percent']:.1f}%`"
+        )
+    return "\n".join(lines)
+
+
+def _trajectory_sequence(trace: Trace) -> list[str]:
+    sequence: list[str] = []
+    for event in trace.events:
+        if event.tool_call is None:
+            continue
+        payload = event.tool_call.payload or {}
+        tool_name = payload.get("tool_name")
+        if isinstance(tool_name, str) and tool_name:
+            sequence.append(tool_name)
+        else:
+            sequence.append(event.tool_call.target)
+    return sequence
+
+
+def _trajectory_match_percent(left: list[str], right: list[str]) -> float:
+    if not left:
+        return 100.0
+    matches = sum(1 for idx, value in enumerate(left) if idx < len(right) and right[idx] == value)
+    return (matches / len(left)) * 100.0
