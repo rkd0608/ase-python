@@ -8,7 +8,7 @@ when adding fields. Never change the meaning of an existing field.
 from __future__ import annotations
 
 import time
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 TRACE_SCHEMA_VERSION = 7
 
 
-class ToolCallKind(StrEnum):
+class ToolCallKind(str, Enum):
     """Classify what kind of backend a tool call targeted."""
 
     DATABASE = "database"
@@ -27,7 +27,7 @@ class ToolCallKind(StrEnum):
     UNKNOWN = "unknown"
 
 
-class TraceEventKind(StrEnum):
+class TraceEventKind(str, Enum):
     """Represent the type of event recorded in a trace."""
 
     TOOL_CALL = "tool_call"
@@ -39,7 +39,7 @@ class TraceEventKind(StrEnum):
     SCENARIO_END = "scenario_end"
 
 
-class TraceStatus(StrEnum):
+class TraceStatus(str, Enum):
     """Describe the overall outcome of one trace."""
 
     RUNNING = "running"
@@ -225,7 +225,7 @@ class ProtocolEvent(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class TraceCertificationLevel(StrEnum):
+class TraceCertificationLevel(str, Enum):
     """Represent the capability tier granted to a certified trace."""
 
     CORE = "core"
