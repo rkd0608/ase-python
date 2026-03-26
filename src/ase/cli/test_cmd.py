@@ -104,26 +104,32 @@ def _run_one(path: Path, store: TraceStore) -> None:
 
 def _collect_scenario_paths(paths: list[Path]) -> list[Path]:
     """Expand file and directory inputs into deterministic scenario file paths."""
-    collected: list[Path] = []
+    explicit: list[Path] = []
+    from_dirs: list[Path] = []
     for path in paths:
         if path.is_dir():
-            collected.extend(sorted(path.rglob("*.yaml")))
-            collected.extend(sorted(path.rglob("*.yml")))
-            continue
-        collected.append(path)
-    unique: list[Path] = []
+            from_dirs.extend(sorted(path.rglob("*.yaml")))
+            from_dirs.extend(sorted(path.rglob("*.yml")))
+        else:
+            explicit.append(path)
+    # Silently skip un-parseable files found via directory scanning only.
+    valid_from_dirs: list[Path] = []
     seen: set[Path] = set()
-    for path in collected:
+    for path in from_dirs:
         try:
             parse_file(path)
         except Exception:
             continue
         resolved = path.resolve()
-        if resolved in seen:
-            continue
-        seen.add(resolved)
-        unique.append(path)
-    return unique
+        if resolved not in seen:
+            seen.add(resolved)
+            valid_from_dirs.append(path)
+    # Explicit paths are always passed through so errors surface to the user.
+    for path in explicit:
+        resolved = path.resolve()
+        if resolved not in seen:
+            seen.add(resolved)
+    return explicit + valid_from_dirs
 
 
 def _filter_by_tags(paths: list[Path], tags: list[str]) -> list[Path]:

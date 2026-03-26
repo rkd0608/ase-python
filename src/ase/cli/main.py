@@ -51,6 +51,10 @@ def _run_test(
         bool,
         typer.Option("--fail-fast", help="Stop after first failed scenario."),
     ] = False,
+    tags: Annotated[
+        list[str] | None,
+        typer.Option("--tag", help="Filter scenarios by tag (OR logic, repeatable)."),
+    ] = None,
     workers: Annotated[
         int,
         typer.Option("--workers", "-w", help="Max concurrent scenarios."),
@@ -62,7 +66,7 @@ def _run_test(
 ) -> None:
     """Lazy-load ase test so non-proxy commands do not import mitmproxy."""
     from ase.cli.test_cmd import run
-    run(scenario, config, output, out_file, fail_fast, workers, debug)
+    run(scenario, config, output, out_file, fail_fast, tags, workers, debug)
 
 
 def _run_watch(
