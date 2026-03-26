@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class Pillar(StrEnum):
+class Pillar(str, Enum):
     """Define ASE's top-level scoring buckets."""
 
     CORRECTNESS = "correctness"
@@ -17,6 +17,14 @@ class Pillar(StrEnum):
     EFFICIENCY = "efficiency"
     CONSISTENCY = "consistency"
     CUSTOM = "custom"
+
+
+class AssertionOutcome(str, Enum):
+    """Classify whether an assertion passed, failed, or errored."""
+
+    PASS = "pass"
+    FAIL = "fail"
+    ERROR = "error"
 
 
 class AssertionResult(BaseModel):
@@ -27,6 +35,7 @@ class AssertionResult(BaseModel):
     passed: bool
     score: float
     message: str
+    outcome: AssertionOutcome | None = None
     details: dict[str, Any] = Field(default_factory=dict)
 
 

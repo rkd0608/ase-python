@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ase.evaluation.base import AssertionResult, Evaluator, Pillar
+from ase.evaluation.base import AssertionOutcome, AssertionResult, Evaluator, Pillar
 from ase.trace.model import Trace
 
 DEFAULT_USD_PER_1K_TOKENS = 0.01
@@ -27,8 +27,11 @@ class MaxToolCallsEvaluator(Evaluator):
 
     def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
         del context
-        resolved = _trace(trace)
-        maximum = _required_int(params, "maximum")
+        try:
+            resolved = _trace(trace)
+            maximum = _required_int(params, "maximum")
+        except (TypeError, ValueError) as exc:
+            return _invalid_params_result(self.name, self.pillar, str(exc), params=params)
         actual = resolved.metrics.total_tool_calls
         passed = actual <= maximum
         return AssertionResult(
@@ -37,6 +40,7 @@ class MaxToolCallsEvaluator(Evaluator):
             passed=passed,
             score=1.0 if passed else 0.0,
             message=_limit_message("tool call(s)", actual, maximum, passed),
+            outcome=AssertionOutcome.PASS if passed else AssertionOutcome.FAIL,
             details={"maximum": maximum, "actual": actual},
         )
 
@@ -54,8 +58,11 @@ class MaxTokensEvaluator(Evaluator):
 
     def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
         del context
-        resolved = _trace(trace)
-        maximum = _required_int(params, "maximum")
+        try:
+            resolved = _trace(trace)
+            maximum = _required_int(params, "maximum")
+        except (TypeError, ValueError) as exc:
+            return _invalid_params_result(self.name, self.pillar, str(exc), params=params)
         actual = resolved.metrics.total_tokens_used
         passed = actual <= maximum
         return AssertionResult(
@@ -64,6 +71,7 @@ class MaxTokensEvaluator(Evaluator):
             passed=passed,
             score=1.0 if passed else 0.0,
             message=_limit_message("token(s)", actual, maximum, passed),
+            outcome=AssertionOutcome.PASS if passed else AssertionOutcome.FAIL,
             details={"maximum": maximum, "actual": actual},
         )
 
@@ -81,9 +89,12 @@ class CostProjectionEvaluator(Evaluator):
 
     def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
         del context
-        resolved = _trace(trace)
-        maximum = _required_float(params, "maximum_usd")
-        rate = _optional_float(params, "usd_per_1k_tokens", DEFAULT_USD_PER_1K_TOKENS)
+        try:
+            resolved = _trace(trace)
+            maximum = _required_float(params, "maximum_usd")
+            rate = _optional_float(params, "usd_per_1k_tokens", DEFAULT_USD_PER_1K_TOKENS)
+        except (TypeError, ValueError) as exc:
+            return _invalid_params_result(self.name, self.pillar, str(exc), params=params)
         tokens = resolved.metrics.total_tokens_used
         projected = (tokens / 1000.0) * rate
         passed = projected <= maximum
@@ -93,6 +104,7 @@ class CostProjectionEvaluator(Evaluator):
             passed=passed,
             score=1.0 if passed else 0.0,
             message=_cost_message(projected, maximum, passed),
+            outcome=AssertionOutcome.PASS if passed else AssertionOutcome.FAIL,
             details={
                 "maximum_usd": maximum,
                 "projected_usd": projected,
@@ -104,6 +116,8 @@ class CostProjectionEvaluator(Evaluator):
 
 def _required_int(params: dict[str, Any], key: str) -> int:
     """Parse integer limits with a stable configuration error."""
+    if not isinstance(params, dict):
+        raise ValueError("params must be a dictionary")
     if key not in params:
         raise ValueError(f"missing required param: {key}")
     return int(params[key])
@@ -111,6 +125,8 @@ def _required_int(params: dict[str, Any], key: str) -> int:
 
 def _required_float(params: dict[str, Any], key: str) -> float:
     """Parse float limits with a stable configuration error."""
+    if not isinstance(params, dict):
+        raise ValueError("params must be a dictionary")
     if key not in params:
         raise ValueError(f"missing required param: {key}")
     return float(params[key])
@@ -118,6 +134,8 @@ def _required_float(params: dict[str, Any], key: str) -> float:
 
 def _optional_float(params: dict[str, Any], key: str, default: float) -> float:
     """Parse optional cost-rate parameters with one neutral fallback."""
+    if not isinstance(params, dict):
+        raise ValueError("params must be a dictionary")
     value = params.get(key)
     if value is None:
         return default
@@ -143,3 +161,20 @@ def _trace(value: object) -> Trace:
     if not isinstance(value, Trace):
         raise ValueError("trace must be a Trace instance")
     return value
+
+
+def _invalid_params_result(
+    evaluator: str,
+    pillar: Pillar,
+    message: str,
+    params: dict[str, Any] | None = None,
+) -> AssertionResult:
+    return AssertionResult(
+        evaluator=evaluator,
+        pillar=pillar,
+        passed=False,
+        score=0.0,
+        message=f"invalid params: {message}",
+        outcome=AssertionOutcome.ERROR,
+        details={"params": dict(params or {})},
+    )
