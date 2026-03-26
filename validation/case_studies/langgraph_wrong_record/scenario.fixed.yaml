@@ -36,5 +36,5 @@ assertions:
       maximum: 1
 
 tags:
-  case_study: wrong-record
-  variant: fixed
+  - case_study-wrong-record
+  - variant-fixed

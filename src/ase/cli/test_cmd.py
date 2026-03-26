@@ -15,6 +15,7 @@ from ase.config.model import OutputFormat
 from ase.errors import CLIError
 from ase.evaluation.engine import EvaluationEngine
 from ase.evaluation.trace_summary import attach_summary
+from ase.reporting.terminal import render_suite_header
 from ase.scenario.model import AgentRuntimeMode, ScenarioConfig
 from ase.scenario.parser import parse_file
 from ase.storage.trace_store import TraceStore
@@ -29,6 +30,7 @@ def run(
     output: Annotated[OutputFormat | None, typer.Option("--output", "-o")] = None,
     out_file: Annotated[Path | None, typer.Option("--out-file", "-f")] = None,
     fail_fast: Annotated[bool, typer.Option("--fail-fast")] = False,
+    tags: Annotated[list[str] | None, typer.Option("--tag")] = None,
     workers: Annotated[int, typer.Option("--workers", "-w")] = 4,
     debug: Annotated[bool, typer.Option("--debug")] = False,
 ) -> None:
@@ -37,8 +39,21 @@ def run(
     scenario_paths = scenario or []
     if not scenario_paths:
         raise typer.Exit(code=1)
+    discovered = _collect_scenario_paths(scenario_paths)
+    filtered = _filter_by_tags(discovered, tags or [])
+    _console.print(
+        render_suite_header(
+            roots=scenario_paths,
+            selected_count=len(filtered),
+            total_count=len(discovered),
+            tags=tags or [],
+        )
+    )
+    if tags and not filtered:
+        _console.print(f"[yellow]warning:[/yellow] no scenarios matched tags: {', '.join(tags)}")
+        return
     store = TraceStore()
-    _run_all(scenario_paths, store, fail_fast=fail_fast)
+    _run_all(filtered, store, fail_fast=fail_fast)
 
 
 def _run_all(paths: list[Path], store: TraceStore, *, fail_fast: bool) -> None:
@@ -85,6 +100,43 @@ def _run_one(path: Path, store: TraceStore) -> None:
     _render_summary(trace, summary)
     if not summary.passed or result.returncode != 0:
         raise CLIError(f"scenario failed: {scenario.scenario_id}")
+
+
+def _collect_scenario_paths(paths: list[Path]) -> list[Path]:
+    """Expand file and directory inputs into deterministic scenario file paths."""
+    collected: list[Path] = []
+    for path in paths:
+        if path.is_dir():
+            collected.extend(sorted(path.rglob("*.yaml")))
+            collected.extend(sorted(path.rglob("*.yml")))
+            continue
+        collected.append(path)
+    unique: list[Path] = []
+    seen: set[Path] = set()
+    for path in collected:
+        try:
+            parse_file(path)
+        except Exception:
+            continue
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        unique.append(path)
+    return unique
+
+
+def _filter_by_tags(paths: list[Path], tags: list[str]) -> list[Path]:
+    """Filter scenarios using OR matching across configured tags."""
+    if not tags:
+        return paths
+    requested = {tag.strip() for tag in tags if tag.strip()}
+    filtered: list[Path] = []
+    for path in paths:
+        scenario = parse_file(path)
+        if requested.intersection(set(scenario.tags)):
+            filtered.append(path)
+    return filtered
 
 
 def _run_agent(scenario: ScenarioConfig, event_path: Path) -> subprocess.CompletedProcess[str]:

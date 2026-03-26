@@ -15,9 +15,19 @@ assertions:
   - evaluator: max_tool_calls
     params:
       maximum: 1
+  - type: trajectory
+    params:
+      expected_sequence:
+        - mcp://filesystem/orders/ord-001
+      strict_order: true
+      allow_extra: false
 policies:
   - evaluator: approval_required
     policy_id: require-mcp-write-approval
     params:
       approval_id: mcp-write
       target_contains: mcp://filesystem/orders/ord-001
+tags:
+  - tool_use
+  - correctness
+  - efficiency

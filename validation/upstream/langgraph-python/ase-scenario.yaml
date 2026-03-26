@@ -33,6 +33,6 @@ assertions:
       maximum: 1
 
 tags:
-  framework: langgraph
-  source: upstream
+  - framework-langgraph
+  - source-upstream
 

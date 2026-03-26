@@ -33,5 +33,5 @@ assertions:
       maximum: 1
 
 tags:
-  case_study: prompt-regression
-  variant: fixed
+  - case_study-prompt-regression
+  - variant-fixed

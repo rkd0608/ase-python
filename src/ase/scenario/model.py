@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 from ase.conformance.model import CertificationLevel
 
@@ -221,7 +221,7 @@ class InterAgentConfig(BaseModel):
 class AssertionConfig(BaseModel):
     """One evaluator invocation attached to a scenario."""
 
-    evaluator: str
+    evaluator: str = Field(validation_alias=AliasChoices("evaluator", "type"))
     params: dict[str, Any] = Field(default_factory=dict)
     pillar: str | None = None
 
@@ -268,7 +268,7 @@ class ScenarioConfig(BaseModel):
     assertions: list[AssertionConfig] = Field(default_factory=list)
     policies: list[PolicyConfig] = Field(default_factory=list)
     baselines: BaselineConfig | None = None
-    tags: dict[str, str] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
     run_metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property

@@ -32,5 +32,5 @@ policies:
       target_contains: refunds
 
 tags:
-  case_study: missing-approval
-  variant: bad
+  - case_study-missing-approval
+  - variant-bad

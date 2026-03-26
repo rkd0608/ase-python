@@ -29,6 +29,23 @@ def render_compact(summary: EvaluationSummary, console: Console | None = None) -
     target.print(_summary_panel(summary))
 
 
+def render_suite_header(
+    *,
+    roots: list[object],
+    selected_count: int,
+    total_count: int,
+    tags: list[str] | None = None,
+) -> str:
+    """Render a suite-level header that includes optional tag filtering metadata."""
+    root_label = ", ".join(str(root) for root in roots)
+    if tags:
+        return (
+            f"◆ ASE Test Suite: {root_label} "
+            f"({selected_count} of {total_count} scenarios, tags: {', '.join(tags)})"
+        )
+    return f"◆ ASE Test Suite: {root_label} ({selected_count} scenarios)"
+
+
 def _summary_panel(summary: EvaluationSummary) -> Panel:
     """Build the high-level summary panel."""
     status = "PASS" if summary.passed else "FAIL"
@@ -63,4 +80,11 @@ def _results_table(summary: EvaluationSummary) -> Table:
     return table
 
 
-__all__ = ["EvaluationSummary", "Pillar", "Trace", "render", "render_compact"]
+__all__ = [
+    "EvaluationSummary",
+    "Pillar",
+    "Trace",
+    "render",
+    "render_compact",
+    "render_suite_header",
+]
