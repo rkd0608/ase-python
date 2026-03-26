@@ -88,7 +88,9 @@ class NoPIIEvaluator(Evaluator):
             passed=passed,
             score=1.0 if passed else 0.0,
             outcome=AssertionOutcome.PASS if passed else AssertionOutcome.FAIL,
-            message="no pii patterns observed" if passed else "pii pattern observed in tool payload",
+            message=(
+                "no pii patterns observed" if passed else "pii pattern observed in tool payload"
+            ),
             details={"violations": matches},
         )
 
@@ -125,7 +127,9 @@ class NoRawSQLEvaluator(Evaluator):
             passed=passed,
             score=1.0 if passed else 0.0,
             outcome=AssertionOutcome.PASS if passed else AssertionOutcome.FAIL,
-            message="no raw sql observed" if passed else "raw sql observed in database call payload",
+            message=(
+                "no raw sql observed" if passed else "raw sql observed in database call payload"
+            ),
             details={"violations": violations, "query_key": key},
         )
 
@@ -151,7 +155,10 @@ def _string_list(params: dict[str, Any], key: str, default: tuple[str, ...]) -> 
     raw = params.get(key)
     if raw is None:
         return default
-    if not isinstance(raw, list) or any(not isinstance(item, str) or not item.strip() for item in raw):
+    invalid = not isinstance(raw, list) or any(
+        not isinstance(item, str) or not item.strip() for item in raw
+    )
+    if invalid:
         raise ValueError(f"{key} must be a list of non-empty strings")
     return tuple(item.strip().lower() for item in raw)
 

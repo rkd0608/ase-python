@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from ase.evaluation.base import AssertionOutcome
-from ase.evaluation.efficiency import CostProjectionEvaluator, MaxTokensEvaluator, MaxToolCallsEvaluator
+from ase.evaluation.efficiency import (
+    CostProjectionEvaluator,
+    MaxTokensEvaluator,
+    MaxToolCallsEvaluator,
+)
 from ase.trace.builder import TraceBuilder
 from ase.trace.model import LLMRequestEvent, ToolCallEvent, ToolCallKind, TraceStatus
 
@@ -10,7 +14,9 @@ def test_max_tool_calls_pass_and_fail_cases() -> None:
     passing_trace = TraceBuilder("pass", "pass").finish()
     failing_trace = (
         TraceBuilder("fail", "fail")
-        .add_tool_call(ToolCallEvent(kind=ToolCallKind.HTTP_API, method="GET", target="https://example.com"))
+        .add_tool_call(
+            ToolCallEvent(kind=ToolCallKind.HTTP_API, method="GET", target="https://example.com")
+        )
         .finish()
     )
 
@@ -21,12 +27,16 @@ def test_max_tool_calls_pass_and_fail_cases() -> None:
 def test_max_tokens_pass_and_fail_cases() -> None:
     passing_trace = (
         TraceBuilder("pass", "pass")
-        .add_llm_request(LLMRequestEvent(model="gpt-test", prompt_hash="a", token_count_estimate=10))
+        .add_llm_request(
+            LLMRequestEvent(model="gpt-test", prompt_hash="a", token_count_estimate=10)
+        )
         .finish()
     )
     failing_trace = (
         TraceBuilder("fail", "fail")
-        .add_llm_request(LLMRequestEvent(model="gpt-test", prompt_hash="b", token_count_estimate=999))
+        .add_llm_request(
+            LLMRequestEvent(model="gpt-test", prompt_hash="b", token_count_estimate=999)
+        )
         .finish()
     )
     assert MaxTokensEvaluator().evaluate(passing_trace, {"maximum": 10}).passed is True
@@ -36,11 +46,17 @@ def test_max_tokens_pass_and_fail_cases() -> None:
 def test_cost_projection_pass_and_fail_cases() -> None:
     trace = (
         TraceBuilder("cost", "cost")
-        .add_llm_request(LLMRequestEvent(model="gpt-test", prompt_hash="c", token_count_estimate=1000))
+        .add_llm_request(
+            LLMRequestEvent(model="gpt-test", prompt_hash="c", token_count_estimate=1000)
+        )
         .finish()
     )
-    assert CostProjectionEvaluator().evaluate(trace, {"maximum_usd": 0.02, "usd_per_1k_tokens": 0.01}).passed is True
-    assert CostProjectionEvaluator().evaluate(trace, {"maximum_usd": 0.009, "usd_per_1k_tokens": 0.01}).passed is False
+    assert CostProjectionEvaluator().evaluate(
+        trace, {"maximum_usd": 0.02, "usd_per_1k_tokens": 0.01}
+    ).passed is True
+    assert CostProjectionEvaluator().evaluate(
+        trace, {"maximum_usd": 0.009, "usd_per_1k_tokens": 0.01}
+    ).passed is False
 
 
 def test_efficiency_evaluators_handle_empty_model_only_and_error_trace() -> None:
@@ -50,7 +66,9 @@ def test_efficiency_evaluators_handle_empty_model_only_and_error_trace() -> None
         .add_llm_request(LLMRequestEvent(model="gpt-test", prompt_hash="m", token_count_estimate=5))
         .finish()
     )
-    error_trace = TraceBuilder("error", "error").finish(status=TraceStatus.ERROR, error_message="boom")
+    error_trace = TraceBuilder("error", "error").finish(
+        status=TraceStatus.ERROR, error_message="boom"
+    )
 
     assert MaxToolCallsEvaluator().evaluate(empty_trace, {"maximum": 0}).passed is True
     assert MaxToolCallsEvaluator().evaluate(model_only_trace, {"maximum": 0}).passed is True
@@ -61,7 +79,9 @@ def test_efficiency_evaluators_handle_empty_model_only_and_error_trace() -> None
     assert MaxTokensEvaluator().evaluate(error_trace, {"maximum": 0}).passed is True
 
     assert CostProjectionEvaluator().evaluate(empty_trace, {"maximum_usd": 0.0}).passed is True
-    assert CostProjectionEvaluator().evaluate(model_only_trace, {"maximum_usd": 0.0}).passed is False
+    assert CostProjectionEvaluator().evaluate(
+        model_only_trace, {"maximum_usd": 0.0}
+    ).passed is False
     assert CostProjectionEvaluator().evaluate(error_trace, {"maximum_usd": 0.0}).passed is True
 
 

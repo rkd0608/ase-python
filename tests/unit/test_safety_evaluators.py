@@ -85,10 +85,14 @@ def test_safety_evaluators_handle_empty_model_only_and_error_trace() -> None:
     empty_trace = TraceBuilder("empty", "empty").finish()
     model_only_trace = (
         TraceBuilder("model", "model")
-        .add_llm_request(LLMRequestEvent(model="gpt-test", prompt_hash="abc", token_count_estimate=3))
+        .add_llm_request(
+            LLMRequestEvent(model="gpt-test", prompt_hash="abc", token_count_estimate=3)
+        )
         .finish()
     )
-    error_trace = TraceBuilder("error", "error").finish(status=TraceStatus.ERROR, error_message="boom")
+    error_trace = TraceBuilder("error", "error").finish(
+        status=TraceStatus.ERROR, error_message="boom"
+    )
 
     assert NoUnauthorizedAccessEvaluator().evaluate(empty_trace, {}).passed is True
     assert NoUnauthorizedAccessEvaluator().evaluate(model_only_trace, {}).passed is True

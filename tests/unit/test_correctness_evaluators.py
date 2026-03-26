@@ -55,10 +55,14 @@ def test_correctness_evaluators_handle_empty_model_only_and_error_trace() -> Non
     empty_trace = TraceBuilder("empty", "Empty").finish()
     model_only_trace = (
         TraceBuilder("model", "Model-only")
-        .add_llm_request(LLMRequestEvent(model="gpt-test", prompt_hash="abc", token_count_estimate=8))
+        .add_llm_request(
+            LLMRequestEvent(model="gpt-test", prompt_hash="abc", token_count_estimate=8)
+        )
         .finish()
     )
-    error_trace = TraceBuilder("error", "Error").finish(status=TraceStatus.ERROR, error_message="boom")
+    error_trace = TraceBuilder("error", "Error").finish(
+        status=TraceStatus.ERROR, error_message="boom"
+    )
 
     tool_eval = ToolCalledEvaluator()
     api_eval = APICalledEvaluator()
