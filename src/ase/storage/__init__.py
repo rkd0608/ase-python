@@ -1,4 +1,4 @@
-"""Source-backed storage package that composes with recovery overlays."""
+"""Source-backed storage package."""
 
 from __future__ import annotations
 

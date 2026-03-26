@@ -1,4 +1,4 @@
-"""Source-backed reporting package that composes with recovery overlays."""
+"""Source-backed reporting package."""
 
 from __future__ import annotations
 

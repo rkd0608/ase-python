@@ -1,4 +1,4 @@
-"""Source-backed evaluation package that composes with recovery overlays."""
+"""Source-backed evaluation package."""
 
 from __future__ import annotations
 

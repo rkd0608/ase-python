@@ -122,25 +122,6 @@ compatibility issue.
 If an upstream framework needs conflicting versions, keep it in `.upstream/`
 and keep ASE itself in the constrained core environment.
 
-## Maintainer-only recovery overlay
-
-If the workspace is missing source modules but still contains matching Python
-3.11 bytecode in `src/ase/**/__pycache__`, you can materialize a recovery
-overlay without modifying `src/`:
-
-```bash
-python3.11 scripts/materialize_recovery_pyc.py .ase-recovery
-python3.11 -m venv .venv311
-source .venv311/bin/activate
-export PIP_CONSTRAINT=constraints/py311.txt
-python -m pip install --upgrade pip
-pip install -e ".[dev]"
-PYTHONPATH=.ase-recovery:src ase --help
-```
-
-This is an interim repository-repair path. For open-source release readiness,
-the missing modules should still be restored as source.
-
 ## Supported CI environments
 
 - Python-only CI for proxy, instrumented, and Python adapter examples
