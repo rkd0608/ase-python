@@ -8,6 +8,6 @@ Run:
 
 ```bash
 pip install -r examples/mcp-python/requirements.txt
-PYTHONPATH=src ./.venv/bin/python -m ase.cli.main test examples/mcp-python/scenario.yaml
-PYTHONPATH=src ./.venv/bin/python -m ase.cli.main certify examples/mcp-python/manifest.yaml
+PYTHONPATH=src python3 -m ase.cli.main test examples/mcp-python/scenario.yaml
+PYTHONPATH=src python3 -m ase.cli.main certify examples/mcp-python/manifest.yaml
 ```

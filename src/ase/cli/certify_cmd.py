@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from ase.conformance.service import certify_manifest, load_manifest, sign_result
-from ase.errors import ConformanceError
+from ase.errors import ASEError
 
 _console = Console()
 
@@ -35,7 +35,7 @@ def run(
     try:
         loaded = load_manifest(manifest)
         result = sign_result(certify_manifest(loaded, manifest), signing_key_env=signing_key_env)
-    except ConformanceError as exc:
+    except ASEError as exc:
         _console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 

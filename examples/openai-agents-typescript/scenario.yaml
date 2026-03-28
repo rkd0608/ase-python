@@ -1,22 +1,17 @@
-scenario_id: upstream-openai-agents-js
-name: Upstream OpenAI Agents JS
-description: >
-  Runs ASE's neutral OpenAI Agents JS adapter harness against the fetched
-  upstream openai-agents-js workspace in `.upstream`.
-
+scenario_id: openai-agents-typescript-example
+name: OpenAI Agents TypeScript Example
+description: Deterministic TypeScript example for ASE adapter workflows.
 agent:
   command:
-    - python3
-    - scripts/run_upstream_openai_agents_js.py
+    - node
+    - examples/openai-agents-typescript/agent.ts
   timeout_seconds: 60
-
 agent_runtime:
   mode: adapter
   framework: openai-agents-js
   language: typescript
-  adapter_name: openai-agents-js
+  adapter_name: openai-agents-typescript
   event_source: events.generated.jsonl
-
 assertions:
   - evaluator: tool_called
     params:
@@ -25,7 +20,5 @@ assertions:
   - evaluator: max_tool_calls
     params:
       maximum: 1
-
 tags:
   - framework-openai-agents-js
-  - source-upstream

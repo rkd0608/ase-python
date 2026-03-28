@@ -45,6 +45,8 @@ def run(
 
 def _load_trace(path: Path) -> Trace:
     """Load one native ASE trace with contextual parse errors."""
+    if path.is_dir():
+        raise TraceSerializationError(f"failed to read trace file {path}: is a directory")
     try:
         return Trace.model_validate_json(path.read_text(encoding="utf-8"))
     except OSError as exc:

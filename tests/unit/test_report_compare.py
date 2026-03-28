@@ -57,6 +57,21 @@ def test_report_renders_otel_json() -> None:
     assert "resourceSpans" in payload
 
 
+def test_report_renders_junit_without_evaluation() -> None:
+    trace = Trace(
+        trace_id="trace-a",
+        scenario_id="scenario-a",
+        scenario_name="scenario-a",
+        status=TraceStatus.PASSED,
+        metrics=TraceMetrics(total_tool_calls=1, total_tokens_used=10),
+        runtime_provenance=RuntimeProvenance(mode="adapter", framework="openai-agents"),
+    )
+    rendered = report_module._render_trace(trace, OutputFormat.JUNIT)
+    assert "<testsuite" in rendered
+    assert 'name="scenario-a"' in rendered
+    assert "trace_status" in rendered
+
+
 def test_compare_builds_evaluation_delta() -> None:
     baseline = _trace("trace-a", "scenario-a", score=0.5, passed=False)
     candidate = _trace("trace-b", "scenario-a", score=1.0, passed=True)

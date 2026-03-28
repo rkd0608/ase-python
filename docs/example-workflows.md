@@ -4,8 +4,13 @@
 
 ```bash
 ase test examples/customer-support/scenarios/refund-happy-path.yaml
-ase watch -- .venv/bin/python examples/customer-support/agent.py
+ase watch -- python3 path/to/your_agent.py
 ```
+
+Proxy-mode note:
+- direct HTTP requests are recorded as HTTP tool calls
+- HTTPS traffic through `CONNECT` is recorded as a tunnel hop unless your agent
+  also emits richer adapter or instrumented events
 
 ## Instrumented quickstart
 
@@ -37,13 +42,13 @@ ase certify examples/mcp-python/manifest.yaml
 ## TypeScript adapter quickstart
 
 ```bash
-npm ci --prefix examples/openai-agents-typescript
+npm install --prefix examples/openai-agents-typescript
 ase test examples/openai-agents-typescript/scenario.yaml
 ase certify examples/openai-agents-typescript/manifest.yaml
 ```
 
-The TypeScript example validates ASE against the official `@openai/agents`
-package from npm, not a local mock package.
+The TypeScript example uses the official `@openai/agents` package from npm
+with a deterministic fake model so ASE can certify the workflow locally.
 
 ## Real upstream framework validation
 

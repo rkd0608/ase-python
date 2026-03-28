@@ -11,6 +11,7 @@ from rich.console import Console
 
 from ase.config.model import OutputFormat
 from ase.errors import CLIError, TraceSerializationError
+from ase.reporting.junit import trace_to_string as junit_trace_to_string
 from ase.trace.model import Trace
 
 _console = Console()
@@ -43,6 +44,8 @@ def run(
 
 def _load_trace(path: Path) -> Trace:
     """Load one native ASE trace with contextual parse errors."""
+    if path.is_dir():
+        raise TraceSerializationError(f"failed to read trace file {path}: is a directory")
     try:
         return Trace.model_validate_json(path.read_text(encoding="utf-8"))
     except OSError as exc:
@@ -59,6 +62,8 @@ def _render_trace(trace: Trace, output: OutputFormat) -> str:
         return _to_markdown(trace)
     if output == OutputFormat.OTEL_JSON:
         return _to_otel_json(trace)
+    if output == OutputFormat.JUNIT:
+        return _to_junit(trace)
     if output == OutputFormat.TERMINAL:
         return _to_terminal_text(trace)
     raise CLIError(f"unsupported report output format: {output}")
@@ -117,3 +122,8 @@ def _to_otel_json(trace: Trace) -> str:
     from ase.trace.otel_export import to_otel_dict
 
     return json.dumps(to_otel_dict(trace), indent=2)
+
+
+def _to_junit(trace: Trace) -> str:
+    """Render persisted evaluation results as JUnit XML for CI consumers."""
+    return junit_trace_to_string(trace)

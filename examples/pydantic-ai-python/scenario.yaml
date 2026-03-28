@@ -1,0 +1,27 @@
+scenario_id: pydantic-ai-python-example
+name: PydanticAI Python Example
+description: Wrapper example around the real upstream PydanticAI harness.
+agent:
+  command:
+    - python3
+    - examples/pydantic-ai-python/agent.py
+  timeout_seconds: 60
+agent_runtime:
+  mode: adapter
+  framework: pydantic-ai
+  language: python
+  adapter_name: pydantic-ai-python
+  event_source: events.generated.jsonl
+session:
+  enabled: true
+  session_id: sess-pydantic-example
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+tags:
+  - framework-pydantic-ai

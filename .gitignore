@@ -16,5 +16,6 @@ validation/upstream/**/events.generated.jsonl
 validation/case_studies/**/events.bad.jsonl
 validation/case_studies/**/events.fixed.jsonl
 examples/**/events.generated.jsonl
+examples/**/node_modules/
 validation/upstream/**/__pycache__/
 *.pyc

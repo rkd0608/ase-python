@@ -1,0 +1,18 @@
+manifest_id: openai-agents-typescript-example
+name: OpenAI Agents TypeScript Example
+adapter_name: openai-agents-typescript
+adapter_version: local-example
+bundle_family: core
+bundle_version: 1.0.0
+framework: openai-agents-js
+language: typescript
+certification_target: core
+methodology_profiles: [core]
+cases:
+  - case_id: openai-agents-typescript-example
+    name: OpenAI Agents TypeScript Example
+    adapter_events: events.generated.jsonl
+    scenario: scenario.yaml
+    required_event_types: [agent_start, tool_start, tool_end, agent_end]
+    minimum_fidelity:
+      tool_calls: 1

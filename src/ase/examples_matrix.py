@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -16,7 +17,7 @@ from pydantic import BaseModel
 from ase.errors import CLIError
 
 ROOT = Path(__file__).resolve().parents[2]
-PYTHON = ROOT / ".venv" / "bin" / "python"
+CURRENT_PYTHON = Path(sys.executable)
 SUPPORTED_EXAMPLES = (
     "instrumented-python",
     "mcp-python",
@@ -54,14 +55,13 @@ def _run_example(example_name: str) -> ExampleRunResult:
 def _commands_for_example(example_name: str) -> list[list[str]]:
     """Return the public ASE commands for one example type."""
     scenario_path = f"examples/{example_name}/scenario.yaml"
-    if example_name == "instrumented-python":
-        return [[str(PYTHON), "-m", "ase.cli.main", "test", scenario_path]]
-    if example_name == "openai-agents-typescript":
-        _ensure_typescript_example_installed()
+    _ensure_example_ready(example_name)
+    if example_name in {"instrumented-python", "customer-support"}:
+        return [[str(CURRENT_PYTHON), "-m", "ase.cli.main", "test", scenario_path]]
     manifest_path = f"examples/{example_name}/manifest.yaml"
     return [
-        [str(PYTHON), "-m", "ase.cli.main", "test", scenario_path],
-        [str(PYTHON), "-m", "ase.cli.main", "certify", manifest_path],
+        [str(CURRENT_PYTHON), "-m", "ase.cli.main", "test", scenario_path],
+        [str(CURRENT_PYTHON), "-m", "ase.cli.main", "certify", manifest_path],
     ]
 
 
@@ -72,14 +72,50 @@ def _working_directory(example_name: str, command: list[str]) -> Path:
     return ROOT
 
 
-def _ensure_typescript_example_installed() -> None:
-    """Install local JS dependencies so the TS adapter example can run."""
-    example_dir = ROOT / "examples" / "openai-agents-typescript"
-    if (example_dir / "node_modules").exists():
+def _ensure_example_ready(example_name: str) -> None:
+    """Materialize any fetched-framework dependencies needed by one example."""
+    if example_name in _UPSTREAM_FRAMEWORKS:
+        _ensure_upstream_framework(_UPSTREAM_FRAMEWORKS[example_name])
+    if example_name == "openai-agents-typescript":
+        _ensure_typescript_example_ready()
+
+
+def _ensure_upstream_framework(framework: str) -> None:
+    """Bootstrap fetched upstream repos on demand so examples stay runnable."""
+    checkout = ROOT / ".upstream" / _UPSTREAM_CHECKOUTS[framework]
+    if _upstream_checkout_ready(framework, checkout):
         return
-    if shutil.which("npm") is None:
-        raise CLIError("npm is required to run the openai-agents-typescript example")
-    _run(["npm", "ci"], cwd=example_dir)
+    command = [
+        str(CURRENT_PYTHON),
+        "scripts/bootstrap_upstream_validations.py",
+        "--framework",
+        framework,
+    ]
+    _run(command, cwd=ROOT)
+
+
+def _ensure_node_available() -> None:
+    """Fail early when the local machine cannot run the TypeScript example."""
+    if shutil.which("node") is None:
+        raise CLIError("node is required to run the openai-agents-typescript example")
+
+
+def _ensure_typescript_example_ready() -> None:
+    """Install local TypeScript example dependencies before running it."""
+    _ensure_node_available()
+    node_modules = ROOT / "examples" / "openai-agents-typescript" / "node_modules"
+    if node_modules.exists():
+        return
+    _run(["npm", "install"], cwd=ROOT / "examples" / "openai-agents-typescript")
+
+
+def _upstream_checkout_ready(framework: str, checkout: Path) -> bool:
+    """Require bootstrap artifacts, not just a directory, before skipping setup."""
+    if not checkout.exists():
+        return False
+    if framework == "openai-agents-js":
+        return (checkout / "node_modules").exists()
+    return (checkout / ".venv" / "bin" / "python").exists()
 
 
 def _run(command: list[str], cwd: Path) -> None:
@@ -125,7 +161,6 @@ def _require_repo_checkout() -> None:
         ROOT / "examples",
         ROOT / "validation",
         ROOT / "src",
-        PYTHON,
     ]
     if all(path.exists() for path in required_paths):
         return
@@ -133,3 +168,16 @@ def _require_repo_checkout() -> None:
         "ase examples run requires the ASE source checkout; "
         "clone https://github.com/rkd0608/ase-python and run it from the repo root"
     )
+
+
+_UPSTREAM_FRAMEWORKS = {
+    "openai-agents-python": "openai-agents-python",
+    "langgraph-python": "langgraph-python",
+    "pydantic-ai-python": "pydantic-ai-python",
+}
+
+_UPSTREAM_CHECKOUTS = {
+    "openai-agents-python": "openai-agents-python",
+    "langgraph-python": "langgraph",
+    "pydantic-ai-python": "pydantic-ai",
+}

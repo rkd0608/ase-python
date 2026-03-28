@@ -1,0 +1,29 @@
+scenario_id: langgraph-python-example
+name: LangGraph Python Example
+description: Wrapper example around the real upstream LangGraph harness.
+agent:
+  command:
+    - python3
+    - examples/langgraph-python/agent.py
+  timeout_seconds: 60
+agent_runtime:
+  mode: adapter
+  framework: langgraph
+  language: python
+  adapter_name: langgraph-python
+  event_source: events.generated.jsonl
+handoffs:
+  enabled: true
+  expected_edges:
+    - from_agent_id: planner-agent
+      to_agent_id: executor-agent
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+tags:
+  - framework-langgraph

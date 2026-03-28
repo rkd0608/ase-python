@@ -4,6 +4,7 @@
   "type": "module",
   "description": "ASE release-candidate example backed by the official @openai/agents package",
   "dependencies": {
-    "@openai/agents": "^0.7.2"
+    "@openai/agents": "^0.7.2",
+    "zod": "^4.1.12"
   }
 }

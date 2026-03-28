@@ -54,6 +54,7 @@ export PIP_CONSTRAINT=constraints/py311.txt
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 python scripts/bootstrap_upstream_validations.py --framework openai-agents-js
+npm install --prefix examples/openai-agents-typescript
 ```
 
 ## Clean verification commands

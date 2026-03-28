@@ -1,25 +1,22 @@
-"""ase test — run adapter-backed scenarios through ASE's evaluation flow."""
+"""ase test — run scenarios through ASE's execution and evaluation flow."""
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Annotated
 
 import typer
 from rich.console import Console
 
-from ase.adapters.protocol import read_and_verify
-from ase.adapters.replay import trace_from_adapter_events
 from ase.config.model import OutputFormat
+from ase.core.engine import SimulationEngine
 from ase.errors import ASEError, CLIError
 from ase.evaluation.engine import EvaluationEngine
 from ase.evaluation.trace_summary import attach_summary
 from ase.reporting.terminal import render_suite_header
-from ase.scenario.model import AgentRuntimeMode, ScenarioConfig
+from ase.scenario.model import AssertionConfig, PolicyConfig
 from ase.scenario.parser import parse_file
 from ase.storage.trace_store import TraceStore
-from ase.trace.model import TraceStatus
 
 _console = Console()
 
@@ -34,8 +31,8 @@ def run(
     workers: Annotated[int, typer.Option("--workers", "-w")] = 4,
     debug: Annotated[bool, typer.Option("--debug")] = False,
 ) -> None:
-    """Run adapter-backed scenarios through replay, evaluation, and persistence."""
-    del config, output, out_file, workers, debug
+    """Run scenarios through ASE and persist the resulting traces."""
+    del config, output, out_file, workers
     scenario_paths = scenario or []
     if not scenario_paths:
         raise typer.Exit(code=1)
@@ -43,7 +40,7 @@ def run(
     filtered = _filter_by_tags(discovered, tags or [])
     _console.print(
         render_suite_header(
-            roots=scenario_paths,
+            roots=[path for path in scenario_paths],
             selected_count=len(filtered),
             total_count=len(discovered),
             tags=tags or [],
@@ -53,10 +50,16 @@ def run(
         _console.print(f"[yellow]warning:[/yellow] no scenarios matched tags: {', '.join(tags)}")
         return
     store = TraceStore()
-    _run_all(filtered, store, fail_fast=fail_fast)
+    _run_all(filtered, store, fail_fast=fail_fast, debug=debug)
 
 
-def _run_all(paths: list[Path], store: TraceStore, *, fail_fast: bool) -> None:
+def _run_all(
+    paths: list[Path],
+    store: TraceStore,
+    *,
+    fail_fast: bool,
+    debug: bool,
+) -> None:
     """Execute all requested scenarios and stop early only when requested."""
     import asyncio
 
@@ -64,7 +67,7 @@ def _run_all(paths: list[Path], store: TraceStore, *, fail_fast: bool) -> None:
     failures = 0
     for path in paths:
         try:
-            _run_one(path, store)
+            _run_one(path, store, debug=debug)
         except ASEError as exc:
             failures += 1
             _console.print(f"[red]{exc}[/red]")
@@ -75,30 +78,18 @@ def _run_all(paths: list[Path], store: TraceStore, *, fail_fast: bool) -> None:
         raise typer.Exit(code=1)
 
 
-def _run_one(path: Path, store: TraceStore) -> None:
-    """Execute one adapter scenario end to end and persist its trace."""
+def _run_one(path: Path, store: TraceStore, *, debug: bool) -> None:
+    """Execute one scenario end to end and persist its trace."""
     scenario = parse_file(path)
-    if scenario.runtime_mode != AgentRuntimeMode.ADAPTER:
-        raise CLIError(f"recovered ase test currently supports adapter mode only: {path}")
-    event_path = _event_path(path, scenario)
-    result = _run_agent(scenario, event_path)
-    events, verification = read_and_verify(event_path)
-    if not verification.passed:
-        details = ", ".join(verification.errors)
-        raise CLIError(f"adapter event stream failed verification: {details}")
-    trace = trace_from_adapter_events(events, scenario.scenario_id, scenario.name)
-    trace.stderr_output = result.stderr.strip() or None
-    if result.returncode != 0:
-        trace.status = TraceStatus.FAILED
-        trace.error_message = trace.stderr_output or f"agent exited with code {result.returncode}"
-    evaluators = list(scenario.assertions) + list(scenario.policies)
-    summary = EvaluationEngine().evaluate(trace, evaluators, {})
-    attach_summary(trace, summary)
     import asyncio
 
+    trace = asyncio.run(SimulationEngine().run(scenario, debug=debug)).trace
+    evaluators = _compiled_assertions(scenario.assertions, scenario.policies)
+    summary = EvaluationEngine().evaluate(trace, evaluators, {})
+    attach_summary(trace, summary)
     asyncio.run(store.save_trace(trace, ase_score=summary.ase_score))
     _render_summary(trace, summary)
-    if not summary.passed or result.returncode != 0:
+    if not summary.passed or trace.status.value not in {"passed"}:
         raise CLIError(f"scenario failed: {scenario.scenario_id}")
 
 
@@ -143,32 +134,6 @@ def _filter_by_tags(paths: list[Path], tags: list[str]) -> list[Path]:
         if requested.intersection(set(scenario.tags)):
             filtered.append(path)
     return filtered
-
-
-def _run_agent(scenario: ScenarioConfig, event_path: Path) -> subprocess.CompletedProcess[str]:
-    """Run the scenario agent with the event sink path exported to the process."""
-    event_path.unlink(missing_ok=True)
-    env = dict(scenario.agent.env)
-    env.update({"ASE_ADAPTER_EVENT_SOURCE": str(event_path)})
-    return subprocess.run(
-        scenario.agent.command,
-        cwd=Path.cwd(),
-        env={**dict(__import__("os").environ), **env},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-
-def _event_path(path: Path, scenario: ScenarioConfig) -> Path:
-    """Resolve an adapter event file relative to the scenario file location."""
-    runtime = scenario.agent_runtime
-    if runtime is None or not runtime.event_source:
-        raise CLIError(f"adapter runtime missing event_source: {path}")
-    source = Path(runtime.event_source)
-    return source if source.is_absolute() else path.resolve().parent / source
-
-
 def _render_summary(trace: object, summary: object) -> None:
     """Print a compact operator-facing outcome for the recovered test path."""
     trace_id = getattr(trace, "trace_id", "unknown")
@@ -177,3 +142,20 @@ def _render_summary(trace: object, summary: object) -> None:
     score = getattr(summary, "ase_score", 0.0)
     status = "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
     _console.print(f"{status} {scenario_id} trace={trace_id} ase_score={score:.2f}")
+
+
+def _compiled_assertions(
+    assertions: list[AssertionConfig],
+    policies: list[PolicyConfig],
+) -> list[AssertionConfig]:
+    """Compile policy configs into assertion configs for the shared engine."""
+    compiled = list(assertions)
+    for policy in policies:
+        compiled.append(
+            AssertionConfig(
+                evaluator=policy.evaluator,
+                params=dict(policy.params),
+                pillar=policy.pillar,
+            )
+        )
+    return compiled

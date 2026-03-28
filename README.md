@@ -4,7 +4,7 @@ ASE is the open pre-production testing and certification layer for agent systems
 
 ASE helps teams observe what an agent **did**, not just what it **said**:
 
-- `ase watch` shows live tool calls with zero-config proxy interception
+- `ase watch` shows live HTTP calls and HTTPS tunnel hops with proxy interception
 - `ase test` runs scenarios and assertions against agent behavior
 - `ase compare` shows what changed between two runs after a model or prompt update
 
@@ -51,6 +51,10 @@ For the full setup guide, see [docs/setup.md](docs/setup.md).
 ASE keeps the agent's own prompts, model, and reasoning intact. It provides
 the environment, captures the trace, evaluates the run, and reports what
 happened.
+
+Proxy-mode note: ASE records direct HTTP requests in full. For HTTPS traffic
+that reaches ASE through a standard `CONNECT` tunnel, ASE records the tunnel
+hop without decrypting the tunneled payload.
 
 More diagrams:
 

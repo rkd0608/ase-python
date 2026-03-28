@@ -1,0 +1,25 @@
+scenario_id: customer-support-refund-happy-path
+name: Customer Support Refund Happy Path
+description: Deterministic customer-support flow for ASE smoke checks.
+agent:
+  command:
+    - python3
+    - examples/customer-support/agent.py
+  timeout_seconds: 60
+agent_runtime:
+  mode: adapter
+  framework: custom
+  language: python
+  adapter_name: customer-support-example
+  event_source: ../events.generated.jsonl
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+tags:
+  - quickstart
+  - customer-support

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from ase.config.model import OutputFormat
 from ase.reporting import json_report, markdown
+from ase.reporting.junit import trace_to_string as junit_trace_to_string
 from ase.trace.model import Trace
 from ase.trace.otel_export import to_otel_dict
 from ase.trace.serializer import write_to_file
@@ -37,4 +38,6 @@ def render_trace(trace: Trace, output: OutputFormat) -> str:
         import json
 
         return json.dumps(to_otel_dict(trace), indent=2)
+    if output == OutputFormat.JUNIT:
+        return junit_trace_to_string(trace)
     return json_report.to_string(trace=trace)

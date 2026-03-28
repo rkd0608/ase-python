@@ -12,10 +12,10 @@ import os
 from typing import TYPE_CHECKING, Any
 
 import structlog
+
 from ase.core.recorder import Recorder
 from ase.core.resolver import Resolver
 from ase.core.runtime_modes import run_direct_runtime
-
 from ase.errors import ASEError
 from ase.scenario.model import (
     AgentRuntimeMode,
@@ -179,7 +179,6 @@ class SimulationEngine:
         from ase.environments.email import EmailEnvironment
         from ase.environments.filesystem import FilesystemEnvironment
         from ase.environments.queue import QueueEnvironment
-
         from ase.trace.model import ToolCallKind
 
         environments: dict[str, Any] = {}

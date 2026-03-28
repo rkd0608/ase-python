@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from ase.evaluation.base import AssertionOutcome, AssertionResult, Evaluator, Pillar
-from ase.trace.model import ToolCallEvent, Trace, TraceEventKind
+from ase.trace.model import ToolCallEvent, TraceEvent, TraceEventKind
 
 
 class ToolCalledEvaluator(Evaluator):
@@ -25,7 +25,7 @@ class ToolCalledEvaluator(Evaluator):
     def pillar(self) -> Pillar:
         return Pillar.CORRECTNESS
 
-    def evaluate(self, trace: Trace, params: dict[str, Any], **context: Any) -> AssertionResult:
+    def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
         del context
         if not isinstance(params, dict):
             return _invalid_params_result(self.name, self.pillar, "params must be a dictionary")
@@ -72,7 +72,7 @@ class APICalledEvaluator(Evaluator):
     def pillar(self) -> Pillar:
         return Pillar.CORRECTNESS
 
-    def evaluate(self, trace: Trace, params: dict[str, Any], **context: Any) -> AssertionResult:
+    def evaluate(self, trace: object, params: dict[str, Any], **context: Any) -> AssertionResult:
         tool_params = dict(params)
         tool_params["kind"] = "http_api"
         return ToolCalledEvaluator().evaluate(trace, tool_params, **context).model_copy(
@@ -81,7 +81,7 @@ class APICalledEvaluator(Evaluator):
 
 
 def _matching_calls(
-    trace: Trace,
+    trace: object,
     kind: str,
     method: str | None,
     target_contains: str | None,
@@ -101,11 +101,11 @@ def _matching_calls(
     return matches
 
 
-def _events(trace: object) -> list[object]:
+def _events(trace: object) -> list[TraceEvent]:
     raw = getattr(trace, "events", [])
     if not isinstance(raw, Iterable):
         return []
-    return list(raw)
+    return [event for event in raw if isinstance(event, TraceEvent)]
 
 
 def _optional_upper(value: object) -> str | None:

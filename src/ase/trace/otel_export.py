@@ -11,7 +11,7 @@ from ase.trace.model import Trace, TraceEventKind
 def to_otel_dict(trace: Trace) -> dict[str, Any]:
     """Export one ASE trace into a compact OTEL-like JSON structure."""
     runtime = trace.runtime_provenance
-    attributes = {
+    attributes: dict[str, Any] = {
         "ase.trace_id": trace.trace_id,
         "ase.scenario_id": trace.scenario_id,
         "ase.status": trace.status.value,

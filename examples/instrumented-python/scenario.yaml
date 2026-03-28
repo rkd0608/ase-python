@@ -1,0 +1,28 @@
+scenario_id: instrumented-python-example
+name: Instrumented Python Example
+description: Local instrumented runtime example backed by direct ASE events.
+agent:
+  command:
+    - python3
+    - examples/instrumented-python/agent.py
+  timeout_seconds: 60
+agent_runtime:
+  mode: instrumented
+  framework: custom-instrumented
+  language: python
+  adapter_name: instrumented-python
+  event_source: events.generated.jsonl
+session:
+  enabled: true
+  session_id: sess-instrumented-example
+assertions:
+  - evaluator: tool_called
+    params:
+      kind: http_api
+      minimum: 1
+  - evaluator: max_tool_calls
+    params:
+      maximum: 1
+tags:
+  - instrumented
+  - quickstart

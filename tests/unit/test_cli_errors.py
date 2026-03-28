@@ -41,7 +41,7 @@ def test_test_malformed_yaml_reports_parse_line_number(tmp_path: Path) -> None:
     assert re.search(r"line\s+\d+", _combined_output(result), flags=re.IGNORECASE)
 
 
-def test_test_empty_assertions_shows_helpful_runtime_error(tmp_path: Path) -> None:
+def test_test_empty_assertions_can_still_complete_without_traceback(tmp_path: Path) -> None:
     scenario = tmp_path / "empty-assertions.yaml"
     scenario.write_text(
         "\n".join(
@@ -60,8 +60,8 @@ def test_test_empty_assertions_shows_helpful_runtime_error(tmp_path: Path) -> No
 
     result = runner.invoke(app, ["test", str(scenario)])
     output = _combined_output(result)
-    assert result.exit_code != 0, output
-    assert "adapter mode only" in output.lower()
+    assert result.exit_code == 0, output
+    assert "PASS empty-assertions" in output
     assert "Traceback" not in output
 
 
@@ -100,4 +100,4 @@ def test_init_existing_name_requires_overwrite_confirmation(tmp_path: Path) -> N
     existing.write_text("already here\n", encoding="utf-8")
 
     result = runner.invoke(app, ["init", str(existing)])
-    _assert_helpful_error(result, pattern=r"no such command 'init'")
+    _assert_helpful_error(result, pattern=r"scenario file already exists")

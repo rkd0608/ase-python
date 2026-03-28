@@ -1,0 +1,19 @@
+manifest_id: openai-agents-python-example
+name: OpenAI Agents Python Example
+adapter_name: openai-agents-python
+adapter_version: local-example
+bundle_family: stateful
+bundle_version: 1.0.0
+framework: openai-agents
+language: python
+certification_target: stateful
+methodology_profiles: [core, stateful]
+cases:
+  - case_id: openai-agents-python-example
+    name: OpenAI Agents Python Example
+    adapter_events: events.generated.jsonl
+    scenario: scenario.yaml
+    required_event_types: [agent_start, session_write, tool_start, tool_end, agent_end]
+    minimum_fidelity:
+      tool_calls: 1
+      session_events: 1

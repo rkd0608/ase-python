@@ -7,8 +7,11 @@ emits ASE adapter events.
 Install and run:
 
 ```bash
-npm ci --prefix examples/openai-agents-typescript
+npm install --prefix examples/openai-agents-typescript
 node examples/openai-agents-typescript/agent.ts
-PYTHONPATH=src ./.venv/bin/python -m ase.cli.main adapter verify examples/openai-agents-typescript/events.generated.jsonl
-PYTHONPATH=src ./.venv/bin/python -m ase.cli.main certify examples/openai-agents-typescript/manifest.yaml
+PYTHONPATH=src python3 -m ase.cli.main adapter verify examples/openai-agents-typescript/events.generated.jsonl
+PYTHONPATH=src python3 -m ase.cli.main certify examples/openai-agents-typescript/manifest.yaml
+
+This example uses the official `@openai/agents` package with a deterministic
+fake model so the ASE workflow stays local and reproducible.
 ```

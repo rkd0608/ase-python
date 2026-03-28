@@ -1,7 +1,7 @@
 scenario_id: mcp-python-example
 name: MCP Python Example
 agent:
-  command: [.venv311/bin/python, examples/mcp-python/agent.py]
+  command: [python3, examples/mcp-python/agent.py]
 agent_runtime:
   mode: adapter
   framework: mcp
