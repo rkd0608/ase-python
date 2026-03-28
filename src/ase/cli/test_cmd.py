@@ -90,7 +90,10 @@ def _run_one(path: Path, store: TraceStore, *, debug: bool) -> None:
     asyncio.run(store.save_trace(trace, ase_score=summary.ase_score))
     _render_summary(trace, summary)
     if not summary.passed or trace.status.value not in {"passed"}:
-        raise CLIError(f"scenario failed: {scenario.scenario_id}")
+        reason = _failure_reason(trace, summary)
+        if reason is None:
+            raise CLIError(f"scenario failed: {scenario.scenario_id}")
+        raise CLIError(f"scenario failed: {scenario.scenario_id} ({reason})")
 
 
 def _collect_scenario_paths(paths: list[Path]) -> list[Path]:
@@ -135,13 +138,22 @@ def _filter_by_tags(paths: list[Path], tags: list[str]) -> list[Path]:
             filtered.append(path)
     return filtered
 def _render_summary(trace: object, summary: object) -> None:
-    """Print a compact operator-facing outcome for the recovered test path."""
+    """Print an operator-facing outcome with separate evaluation and execution states."""
     trace_id = getattr(trace, "trace_id", "unknown")
     scenario_id = getattr(trace, "scenario_id", "unknown")
     passed = getattr(summary, "passed", False)
     score = getattr(summary, "ase_score", 0.0)
-    status = "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
-    _console.print(f"{status} {scenario_id} trace={trace_id} ase_score={score:.2f}")
+    execution = getattr(getattr(trace, "status", None), "value", "unknown")
+    evaluation = "passed" if passed else "failed"
+    overall_passed = passed and execution == "passed"
+    status = "[green]PASS[/green]" if overall_passed else "[red]FAIL[/red]"
+    _console.print(
+        f"{status} {scenario_id} trace={trace_id} ase_score={score:.2f} "
+        f"evaluation={evaluation} execution={execution}"
+    )
+    reason = _failure_reason(trace, summary)
+    if reason is not None:
+        _console.print(f"  [yellow]reason:[/yellow] {reason}")
 
 
 def _compiled_assertions(
@@ -159,3 +171,19 @@ def _compiled_assertions(
             )
         )
     return compiled
+
+
+def _failure_reason(trace: object, summary: object) -> str | None:
+    """Return the highest-signal reason why a run did not fully pass."""
+    execution = getattr(getattr(trace, "status", None), "value", "unknown")
+    if execution != "passed":
+        error_message = getattr(trace, "error_message", None)
+        if isinstance(error_message, str) and error_message.strip():
+            return f"execution failed: {error_message.strip()}"
+        return f"execution failed: status={execution}"
+    if getattr(summary, "passed", False):
+        return None
+    failing = getattr(summary, "failing_evaluators", []) or []
+    if failing:
+        return "evaluation failed: " + ", ".join(str(item) for item in failing)
+    return "evaluation failed"

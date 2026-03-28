@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import io
 import re
 from pathlib import Path
+from types import SimpleNamespace
 
 from typer.testing import CliRunner
 
+from ase.cli import test_cmd
 from ase.cli.main import app
 
 runner = CliRunner()
@@ -62,6 +65,8 @@ def test_test_empty_assertions_can_still_complete_without_traceback(tmp_path: Pa
     output = _combined_output(result)
     assert result.exit_code == 0, output
     assert "PASS empty-assertions" in output
+    assert "evaluation=passed" in output
+    assert "execution=passed" in output
     assert "Traceback" not in output
 
 
@@ -101,3 +106,30 @@ def test_init_existing_name_requires_overwrite_confirmation(tmp_path: Path) -> N
 
     result = runner.invoke(app, ["init", str(existing)])
     _assert_helpful_error(result, pattern=r"scenario file already exists")
+
+
+def test_render_summary_marks_execution_failure_as_fail() -> None:
+    trace = SimpleNamespace(
+        trace_id="trace-x",
+        scenario_id="scenario-x",
+        status=SimpleNamespace(value="failed"),
+        error_message="browser-use judge rejected result",
+    )
+    summary = SimpleNamespace(
+        passed=True,
+        ase_score=1.0,
+        failing_evaluators=[],
+    )
+    buffer = io.StringIO()
+    original_console = test_cmd._console
+    try:
+        from rich.console import Console
+
+        test_cmd._console = Console(file=buffer, force_terminal=False)
+        test_cmd._render_summary(trace, summary)
+        output = buffer.getvalue()
+    finally:
+        test_cmd._console = original_console
+    assert "FAIL scenario-x" in output
+    assert "evaluation=passed execution=failed" in output
+    assert "reason: execution failed: browser-use judge rejected result" in output

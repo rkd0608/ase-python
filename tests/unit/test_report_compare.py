@@ -39,6 +39,7 @@ def _trace(trace_id: str, scenario_id: str, *, score: float, passed: bool) -> Tr
             failed_count=1 if not passed else 0,
             failing_evaluators=[] if passed else ["tool_called"],
         ),
+        error_message=None if passed else "browser-use judge rejected result",
     )
 
 
@@ -48,6 +49,20 @@ def test_report_renders_terminal_summary() -> None:
     assert "trace_id: trace-a" in rendered
     assert "runtime_mode: adapter" in rendered
     assert "ase_score: 1.00" in rendered
+    assert "execution: passed" in rendered
+    assert "evaluation: passed" in rendered
+
+
+def test_report_renders_failure_reason_in_terminal_and_markdown() -> None:
+    trace = _trace("trace-b", "scenario-b", score=0.5, passed=False)
+    terminal = report_module._render_trace(trace, OutputFormat.TERMINAL)
+    markdown = report_module._render_trace(trace, OutputFormat.MARKDOWN)
+    assert "execution: failed" in terminal
+    assert "evaluation: failed" in terminal
+    assert "error_message: browser-use judge rejected result" in terminal
+    assert "- Execution: `failed`" in markdown
+    assert "- Evaluation: `failed`" in markdown
+    assert "- Error: `browser-use judge rejected result`" in markdown
 
 
 def test_report_renders_otel_json() -> None:

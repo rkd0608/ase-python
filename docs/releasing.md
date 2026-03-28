@@ -35,15 +35,15 @@ python -m pip install --upgrade pip
 python -m pip install build twine
 python -m build
 python -m twine check dist/*
-python -m pip install dist/ase_python-0.1.2-py3-none-any.whl
+python -m pip install dist/ase_python-0.1.4-py3-none-any.whl
 ase --help
 ```
 
 ## GitHub release flow
 
 ```bash
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.1.4
+git push origin v0.1.4
 ```
 
 The `publish-pypi` workflow will:

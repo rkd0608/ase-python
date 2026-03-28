@@ -73,10 +73,13 @@ def _to_terminal_text(trace: Trace) -> str:
     """Summarize the key execution, runtime, and evaluation facts for operators."""
     evaluation = trace.evaluation
     runtime = trace.runtime_provenance
+    evaluation_status = _evaluation_status(trace)
     lines = [
         f"trace_id: {trace.trace_id}",
         f"scenario: {trace.scenario_id}",
         f"status: {trace.status}",
+        f"execution: {trace.status.value}",
+        f"evaluation: {evaluation_status}",
         f"runtime_mode: {runtime.mode if runtime else 'unknown'}",
         f"framework: {runtime.framework if runtime and runtime.framework else 'unknown'}",
         f"tool_calls: {trace.metrics.total_tool_calls}",
@@ -90,11 +93,14 @@ def _to_terminal_text(trace: Trace) -> str:
         )
         lines.extend(
             [
-                f"evaluation: {'passed' if evaluation.passed else 'failed'}",
                 f"ase_score: {evaluation.ase_score:.2f}",
                 f"assertions: {assertions}",
             ]
         )
+        if evaluation.failing_evaluators:
+            lines.append("failing_evaluators: " + ", ".join(evaluation.failing_evaluators))
+    if trace.error_message:
+        lines.append(f"error_message: {trace.error_message}")
     return "\n".join(lines)
 
 
@@ -102,18 +108,30 @@ def _to_markdown(trace: Trace) -> str:
     """Render a short Markdown report suitable for CI summaries and PR comments."""
     evaluation = trace.evaluation
     runtime = trace.runtime_provenance
+    execution_status = trace.status.value
+    evaluation_status = _evaluation_status(trace)
     lines = [
         "# ASE Trace Report",
         "",
         f"- Trace ID: `{trace.trace_id}`",
         f"- Scenario: `{trace.scenario_id}`",
         f"- Status: `{trace.status}`",
+        f"- Execution: `{execution_status}`",
+        f"- Evaluation: `{evaluation_status}`",
         f"- Runtime: `{runtime.mode if runtime else 'unknown'}`",
         f"- Framework: `{runtime.framework if runtime and runtime.framework else 'unknown'}`",
         f"- Tool calls: `{trace.metrics.total_tool_calls}`",
     ]
     if evaluation is not None:
         lines.append(f"- ASE score: `{evaluation.ase_score:.2f}`")
+        if evaluation.failing_evaluators:
+            lines.append(
+                "- Failing evaluators: `"
+                + ", ".join(evaluation.failing_evaluators)
+                + "`"
+            )
+    if trace.error_message:
+        lines.append(f"- Error: `{trace.error_message}`")
     return "\n".join(lines)
 
 
@@ -127,3 +145,10 @@ def _to_otel_json(trace: Trace) -> str:
 def _to_junit(trace: Trace) -> str:
     """Render persisted evaluation results as JUnit XML for CI consumers."""
     return junit_trace_to_string(trace)
+
+
+def _evaluation_status(trace: Trace) -> str:
+    """Return the persisted evaluation status when present."""
+    if trace.evaluation is None:
+        return "unknown"
+    return "passed" if trace.evaluation.passed else "failed"
