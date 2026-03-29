@@ -9,6 +9,22 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
+from ase.artifacts.bundle import (
+    load_suite_artifact,
+    resolve_trace_path,
+)
+from ase.artifacts.bundle import (
+    render_json as render_suite_json,
+)
+from ase.artifacts.bundle import (
+    render_junit as render_suite_junit,
+)
+from ase.artifacts.bundle import (
+    render_markdown as render_suite_markdown,
+)
+from ase.artifacts.bundle import (
+    render_terminal as render_suite_terminal,
+)
 from ase.config.model import OutputFormat
 from ase.errors import CLIError, TraceSerializationError
 from ase.reporting.junit import trace_to_string as junit_trace_to_string
@@ -30,13 +46,12 @@ def run(
 ) -> None:
     """Render a trace in a compact operator-facing or machine-readable format."""
     try:
-        trace = _load_trace(trace_file)
-        rendered = _render_trace(trace, output)
+        rendered = _render_input(trace_file, output)
         if out_file is not None:
             suffix = "\n" if not rendered.endswith("\n") else ""
             out_file.write_text(rendered + suffix, encoding="utf-8")
             return
-        _console.print(rendered)
+        typer.echo(rendered, nl=not rendered.endswith("\n"))
     except (CLIError, TraceSerializationError) as exc:
         _console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
@@ -45,13 +60,36 @@ def run(
 def _load_trace(path: Path) -> Trace:
     """Load one native ASE trace with contextual parse errors."""
     if path.is_dir():
-        raise TraceSerializationError(f"failed to read trace file {path}: is a directory")
+        path = resolve_trace_path(path)
+        if path.is_dir():
+            raise TraceSerializationError(
+                f"failed to read trace file {path}: is a directory; "
+                "expected trace.json in artifact directory"
+            )
     try:
         return Trace.model_validate_json(path.read_text(encoding="utf-8"))
     except OSError as exc:
         raise TraceSerializationError(f"failed to read trace file {path}: {exc}") from exc
     except Exception as exc:  # noqa: BLE001
         raise TraceSerializationError(f"failed to parse trace file {path}: {exc}") from exc
+
+
+def _render_input(path: Path, output: OutputFormat) -> str:
+    """Render either a stored trace or a bundle summary."""
+    if path.is_dir():
+        bundle = load_suite_artifact(path)
+        if bundle is not None:
+            if output == OutputFormat.JUNIT:
+                cached = path / "junit.xml"
+                if cached.exists():
+                    return cached.read_text(encoding="utf-8")
+            return _render_suite(bundle, output)
+        trace_path = resolve_trace_path(path)
+        if trace_path != path and trace_path.exists():
+            trace = _load_trace(trace_path)
+            return _render_trace(trace, output)
+    trace = _load_trace(path)
+    return _render_trace(trace, output)
 
 
 def _render_trace(trace: Trace, output: OutputFormat) -> str:
@@ -69,6 +107,24 @@ def _render_trace(trace: Trace, output: OutputFormat) -> str:
     raise CLIError(f"unsupported report output format: {output}")
 
 
+def _render_suite(bundle: object, output: OutputFormat) -> str:
+    """Render a suite artifact bundle with the requested output format."""
+    from ase.artifacts.bundle import SuiteArtifact
+
+    assert isinstance(bundle, SuiteArtifact)
+    if output == OutputFormat.JSON:
+        return render_suite_json(bundle)
+    if output == OutputFormat.MARKDOWN:
+        return render_suite_markdown(bundle)
+    if output == OutputFormat.OTEL_JSON:
+        raise CLIError("artifact bundles do not support otel-json reports")
+    if output == OutputFormat.JUNIT:
+        return render_suite_junit(bundle, {})
+    if output == OutputFormat.TERMINAL:
+        return render_suite_terminal(bundle)
+    raise CLIError(f"unsupported report output format: {output}")
+
+
 def _to_terminal_text(trace: Trace) -> str:
     """Summarize the key execution, runtime, and evaluation facts for operators."""
     evaluation = trace.evaluation
@@ -78,7 +134,7 @@ def _to_terminal_text(trace: Trace) -> str:
         f"run_id: {trace.trace_id}",
         f"scenario: {trace.scenario_id}",
         f"run_result: {trace.status.value}",
-        f"ase_checks: {checks_status}",
+        f"checks: {checks_status}",
         f"run_type: {runtime.mode if runtime else 'unknown'}",
         f"framework: {runtime.framework if runtime and runtime.framework else 'unknown'}",
         f"tool_calls: {trace.metrics.total_tool_calls}",
@@ -120,7 +176,7 @@ def _to_markdown(trace: Trace) -> str:
         f"- Run ID: `{trace.trace_id}`",
         f"- Scenario: `{trace.scenario_id}`",
         f"- Run result: `{execution_status}`",
-        f"- ASE checks: `{checks_status}`",
+        f"- Checks: `{checks_status}`",
         f"- Run type: `{runtime.mode if runtime else 'unknown'}`",
         f"- Framework: `{runtime.framework if runtime and runtime.framework else 'unknown'}`",
         f"- Tool calls: `{trace.metrics.total_tool_calls}`",
@@ -174,11 +230,11 @@ def _what_happened(trace: Trace) -> list[str]:
         f"ASE observed {trace.metrics.total_tool_calls} tool call(s).",
     ]
     if trace.evaluation is None:
-        items.append("This report came from a replayed trace, so ASE checks are not attached here.")
+        items.append("This report came from a replayed trace, so checks are not attached here.")
     elif trace.evaluation.passed:
-        items.append("ASE checks passed on the stored run.")
+        items.append("Checks passed on the stored run.")
     else:
-        items.append("ASE checks failed on the stored run.")
+        items.append("Checks failed on the stored run.")
     if trace.status.value == "passed":
         items.append("The agent run completed successfully.")
     else:

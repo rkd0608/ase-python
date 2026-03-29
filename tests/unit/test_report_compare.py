@@ -50,7 +50,7 @@ def test_report_renders_terminal_summary() -> None:
     assert "run_type: adapter" in rendered
     assert "ase_score: 1.00" in rendered
     assert "run_result: passed" in rendered
-    assert "ase_checks: passed" in rendered
+    assert "checks: passed" in rendered
 
 
 def test_report_renders_failure_reason_in_terminal_and_markdown() -> None:
@@ -58,10 +58,10 @@ def test_report_renders_failure_reason_in_terminal_and_markdown() -> None:
     terminal = report_module._render_trace(trace, OutputFormat.TERMINAL)
     markdown = report_module._render_trace(trace, OutputFormat.MARKDOWN)
     assert "run_result: failed" in terminal
-    assert "ase_checks: failed" in terminal
+    assert "checks: failed" in terminal
     assert "main_reason: browser-use judge rejected result" in terminal
     assert "- Run result: `failed`" in markdown
-    assert "- ASE checks: `failed`" in markdown
+    assert "- Checks: `failed`" in markdown
     assert "- Main reason: `browser-use judge rejected result`" in markdown
 
 
@@ -75,7 +75,7 @@ def test_report_marks_replayed_trace_as_missing_checks() -> None:
         runtime_provenance=RuntimeProvenance(mode="adapter", framework="browser-use"),
     )
     markdown = report_module._render_trace(trace, OutputFormat.MARKDOWN)
-    assert "- ASE checks: `not included in this trace`" in markdown
+    assert "- Checks: `not included in this trace`" in markdown
     assert "This report came from a replayed trace" in markdown
     assert "Suggested Next Step" in markdown
 

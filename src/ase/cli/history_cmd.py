@@ -51,7 +51,7 @@ async def _show_trace(store: TraceStore, trace_id: str) -> None:
     _console.print(f"\n[bold]Run:[/bold] {trace.trace_id}")
     _console.print(f"Scenario: {trace.scenario_id} — {trace.scenario_name}")
     _console.print(f"Run result: [bold]{trace.status.value}[/bold]")
-    _console.print(f"ASE checks: [bold]{_evaluation_status(trace)}[/bold]")
+    _console.print(f"Checks: [bold]{_evaluation_status(trace)}[/bold]")
     _console.print(f"Run type:   [bold]{_runtime_mode(trace)}[/bold]")
     _console.print(f"Framework:  [bold]{_framework_label(trace)}[/bold]")
     if trace.certification_level is not None:
@@ -85,7 +85,7 @@ async def _list_traces(
     table.add_column("Scenario", style="bold")
     table.add_column("Run type")
     table.add_column("Framework")
-    table.add_column("ASE checks")
+    table.add_column("Checks")
     table.add_column("Run result")
     table.add_column("Certified")
     table.add_column("Score", justify="right")
@@ -144,9 +144,9 @@ def _what_happened(trace: Trace) -> list[str]:
     else:
         items.append(f"The agent run ended with status '{trace.status.value}'.")
     if trace.evaluation is None:
-        items.append("ASE checks are not attached to this run.")
+        items.append("Checks are not attached to this run.")
     elif trace.evaluation.passed:
-        items.append("ASE checks passed.")
+        items.append("Checks passed.")
     else:
-        items.append("ASE checks failed.")
+        items.append("Checks failed.")
     return items

@@ -9,6 +9,7 @@ from typing import Annotated, Any
 import typer
 from rich.console import Console
 
+from ase.artifacts.bundle import resolve_trace_path
 from ase.config.model import OutputFormat
 from ase.errors import CLIError, TraceSerializationError
 from ase.trace.model import Trace
@@ -46,7 +47,12 @@ def run(
 def _load_trace(path: Path) -> Trace:
     """Load one native ASE trace with contextual parse errors."""
     if path.is_dir():
-        raise TraceSerializationError(f"failed to read trace file {path}: is a directory")
+        path = resolve_trace_path(path)
+        if path.is_dir():
+            raise TraceSerializationError(
+                f"failed to read trace file {path}: is a directory; "
+                "expected trace.json in artifact directory"
+            )
     try:
         return Trace.model_validate_json(path.read_text(encoding="utf-8"))
     except OSError as exc:

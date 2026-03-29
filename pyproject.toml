@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ase-python"
-version = "0.1.5"
+version = "0.1.6"
 description = "Agent Simulation Engine — pytest for AI agent tool calls"
 requires-python = ">=3.11"
 readme = { file = "README_PYPI.md", content-type = "text/markdown" }

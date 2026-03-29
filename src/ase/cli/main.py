@@ -63,10 +63,32 @@ def _run_test(
         bool,
         typer.Option("--debug", help="Stream agent stdout/stderr live to terminal."),
     ] = False,
+    artifacts_dir: Annotated[
+        Path | None,
+        typer.Option("--artifacts-dir", help="Write a self-contained suite artifact bundle."),
+    ] = None,
+    compare_to_baseline: Annotated[
+        bool,
+        typer.Option(
+            "--compare-to-baseline",
+            help="Compare each scenario to its pinned baseline and fail on regressions.",
+        ),
+    ] = False,
 ) -> None:
     """Lazy-load ase test so non-proxy commands do not import mitmproxy."""
     from ase.cli.test_cmd import run
-    run(scenario, config, output, out_file, fail_fast, tags, workers, debug)
+    run(
+        scenario,
+        config,
+        output,
+        out_file,
+        fail_fast,
+        tags,
+        workers,
+        debug,
+        artifacts_dir,
+        compare_to_baseline,
+    )
 
 
 def _run_watch(

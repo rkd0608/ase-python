@@ -93,7 +93,7 @@ def test_history_show_trace_uses_user_facing_labels() -> None:
     output = buffer.getvalue()
     assert "Run: trace-history-a" in output
     assert "Run result: failed" in output
-    assert "ASE checks: passed" in output
+    assert "Checks: passed" in output
     assert "Run type:   adapter" in output
     assert "Framework:  browser-use" in output
     assert "What happened:" in output
@@ -112,6 +112,6 @@ def test_history_list_traces_keeps_framework_and_run_type_separate() -> None:
     output = buffer.getvalue()
     assert "Run type" in output
     assert "Framework" in output
-    assert "ASE checks" in output
+    assert "Checks" in output
     assert "adapter" in output
     assert "browser-use" in output

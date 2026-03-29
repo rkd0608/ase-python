@@ -1,4 +1,4 @@
-"""JUnit XML output for ASE evaluation summaries and trace fallbacks."""
+"""JUnit XML output for ASE evaluation summaries, traces, and suite artifacts."""
 
 from __future__ import annotations
 
@@ -43,6 +43,33 @@ def write_to_file(summary: EvaluationSummary, path: Path) -> None:
 def trace_to_string(trace: Trace) -> str:
     """Render one trace as JUnit even when no evaluation summary exists yet."""
     return to_string(_summary_for_trace(trace))
+
+
+def suite_to_string(suite: object, traces: dict[str, Trace] | None = None) -> str:
+    """Render one suite artifact as JUnit XML."""
+    traces = traces or {}
+    suite_elem = ET.Element(
+        "testsuite",
+        name=getattr(suite, "suite_id", "unknown"),
+        tests=str(getattr(suite, "total_scenarios", 0)),
+        failures=str(getattr(suite, "failed_scenarios", 0)),
+    )
+    for scenario in getattr(suite, "scenarios", []):
+        case = ET.SubElement(
+            suite_elem,
+            "testcase",
+            classname=scenario.scenario_id,
+            name=scenario.scenario_name,
+        )
+        if scenario.run_result != "passed" or getattr(scenario, "baseline_regression", False):
+            message = scenario.main_reason or scenario.regression_summary or scenario.run_result
+            failure = ET.SubElement(case, "failure", message=message)
+            failure.text = message
+        trace = traces.get(scenario.trace_id)
+        if trace is not None and trace.error_message:
+            system_out = ET.SubElement(case, "system-out")
+            system_out.text = trace.error_message
+    return ET.tostring(suite_elem, encoding="unicode")
 
 
 def _summary_for_trace(trace: Trace) -> EvaluationSummary:

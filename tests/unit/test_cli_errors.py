@@ -9,6 +9,7 @@ from typer.testing import CliRunner
 
 from ase.cli import test_cmd
 from ase.cli.main import app
+from ase.evaluation.base import EvaluationSummary
 
 runner = CliRunner()
 
@@ -66,7 +67,7 @@ def test_test_empty_assertions_can_still_complete_without_traceback(tmp_path: Pa
     assert result.exit_code == 0, output
     assert "PASS empty-assertions" in output
     assert "Run result: passed" in output
-    assert "ASE checks: passed (0/0)" in output
+    assert "Checks: passed (0/0)" in output
     assert "What happened:" in output
     assert "Next: ase history --trace-id" in output
     assert "Traceback" not in output
@@ -90,7 +91,11 @@ def test_compare_dirs_with_no_matching_scenarios_reports_helpful_message(tmp_pat
 
     result = runner.invoke(app, ["compare", str(baseline), str(candidate)])
     _assert_helpful_error(result, pattern=r"failed to read trace file")
-    assert re.search(r"is\s+a directory", _combined_output(result), flags=re.IGNORECASE)
+    assert re.search(
+        r"expected\s+trace\.json\s+in\s+artifact\s+directory",
+        _combined_output(result),
+        flags=re.IGNORECASE,
+    )
 
 
 def test_report_empty_directory_reports_no_traces(tmp_path: Path) -> None:
@@ -99,7 +104,11 @@ def test_report_empty_directory_reports_no_traces(tmp_path: Path) -> None:
 
     result = runner.invoke(app, ["report", str(empty_dir)])
     _assert_helpful_error(result, pattern=r"failed to read trace file")
-    assert re.search(r"is\s+a directory", _combined_output(result), flags=re.IGNORECASE)
+    assert re.search(
+        r"expected\s+trace\.json\s+in\s+artifact\s+directory",
+        _combined_output(result),
+        flags=re.IGNORECASE,
+    )
 
 
 def test_init_existing_name_requires_overwrite_confirmation(tmp_path: Path) -> None:
@@ -117,10 +126,23 @@ def test_render_summary_marks_execution_failure_as_fail() -> None:
         status=SimpleNamespace(value="failed"),
         error_message="browser-use judge rejected result",
     )
-    summary = SimpleNamespace(
+    summary = EvaluationSummary(
+        trace_id="trace-x",
+        scenario_id="scenario-x",
         passed=True,
         ase_score=1.0,
+        total=0,
+        passed_count=0,
+        failed_count=0,
+        results=[],
+        pillar_scores={},
         failing_evaluators=[],
+    )
+    run = test_cmd.ScenarioRun(
+        scenario_path=Path("scenario-x.yaml"),
+        trace=trace,
+        summary=summary,
+        failure_reason="browser-use judge rejected result",
     )
     buffer = io.StringIO()
     original_console = test_cmd._console
@@ -128,14 +150,14 @@ def test_render_summary_marks_execution_failure_as_fail() -> None:
         from rich.console import Console
 
         test_cmd._console = Console(file=buffer, force_terminal=False)
-        test_cmd._render_summary(trace, summary)
+        test_cmd._render_summary(run)
         output = buffer.getvalue()
     finally:
         test_cmd._console = original_console
     assert "FAIL scenario-x" in output
     assert "Run result: failed" in output
-    assert "ASE checks: passed (0/0)" in output
+    assert "Checks: passed (0/0)" in output
     assert "Why it failed: browser-use judge rejected result" in output
     assert "What happened:" in output
-    assert "ASE checks passed." in output
+    assert "Checks passed." in output
     assert "Next: ase history --trace-id trace-x" in output

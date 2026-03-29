@@ -137,6 +137,7 @@ async function main() {
   await mkdir(dirname(eventPath), { recursive: true });
   await writeFile(eventPath, `${events.map((item) => JSON.stringify(item)).join('\n')}\n`, 'utf-8');
   console.log(result.finalOutput);
+  process.exit(0);
 }
 
 main().catch((error) => {
