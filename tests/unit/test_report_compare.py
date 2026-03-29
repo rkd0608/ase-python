@@ -46,23 +46,38 @@ def _trace(trace_id: str, scenario_id: str, *, score: float, passed: bool) -> Tr
 def test_report_renders_terminal_summary() -> None:
     trace = _trace("trace-a", "scenario-a", score=1.0, passed=True)
     rendered = report_module._render_trace(trace, OutputFormat.TERMINAL)
-    assert "trace_id: trace-a" in rendered
-    assert "runtime_mode: adapter" in rendered
+    assert "run_id: trace-a" in rendered
+    assert "run_type: adapter" in rendered
     assert "ase_score: 1.00" in rendered
-    assert "execution: passed" in rendered
-    assert "evaluation: passed" in rendered
+    assert "run_result: passed" in rendered
+    assert "ase_checks: passed" in rendered
 
 
 def test_report_renders_failure_reason_in_terminal_and_markdown() -> None:
     trace = _trace("trace-b", "scenario-b", score=0.5, passed=False)
     terminal = report_module._render_trace(trace, OutputFormat.TERMINAL)
     markdown = report_module._render_trace(trace, OutputFormat.MARKDOWN)
-    assert "execution: failed" in terminal
-    assert "evaluation: failed" in terminal
-    assert "error_message: browser-use judge rejected result" in terminal
-    assert "- Execution: `failed`" in markdown
-    assert "- Evaluation: `failed`" in markdown
-    assert "- Error: `browser-use judge rejected result`" in markdown
+    assert "run_result: failed" in terminal
+    assert "ase_checks: failed" in terminal
+    assert "main_reason: browser-use judge rejected result" in terminal
+    assert "- Run result: `failed`" in markdown
+    assert "- ASE checks: `failed`" in markdown
+    assert "- Main reason: `browser-use judge rejected result`" in markdown
+
+
+def test_report_marks_replayed_trace_as_missing_checks() -> None:
+    trace = Trace(
+        trace_id="trace-c",
+        scenario_id="scenario-c",
+        scenario_name="scenario-c",
+        status=TraceStatus.PASSED,
+        metrics=TraceMetrics(total_tool_calls=1, total_tokens_used=10),
+        runtime_provenance=RuntimeProvenance(mode="adapter", framework="browser-use"),
+    )
+    markdown = report_module._render_trace(trace, OutputFormat.MARKDOWN)
+    assert "- ASE checks: `not included in this trace`" in markdown
+    assert "This report came from a replayed trace" in markdown
+    assert "Suggested Next Step" in markdown
 
 
 def test_report_renders_otel_json() -> None:

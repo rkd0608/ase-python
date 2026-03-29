@@ -73,14 +73,13 @@ def _to_terminal_text(trace: Trace) -> str:
     """Summarize the key execution, runtime, and evaluation facts for operators."""
     evaluation = trace.evaluation
     runtime = trace.runtime_provenance
-    evaluation_status = _evaluation_status(trace)
+    checks_status = _checks_status(trace)
     lines = [
-        f"trace_id: {trace.trace_id}",
+        f"run_id: {trace.trace_id}",
         f"scenario: {trace.scenario_id}",
-        f"status: {trace.status}",
-        f"execution: {trace.status.value}",
-        f"evaluation: {evaluation_status}",
-        f"runtime_mode: {runtime.mode if runtime else 'unknown'}",
+        f"run_result: {trace.status.value}",
+        f"ase_checks: {checks_status}",
+        f"run_type: {runtime.mode if runtime else 'unknown'}",
         f"framework: {runtime.framework if runtime and runtime.framework else 'unknown'}",
         f"tool_calls: {trace.metrics.total_tool_calls}",
         f"llm_calls: {trace.metrics.total_llm_calls}",
@@ -100,7 +99,12 @@ def _to_terminal_text(trace: Trace) -> str:
         if evaluation.failing_evaluators:
             lines.append("failing_evaluators: " + ", ".join(evaluation.failing_evaluators))
     if trace.error_message:
-        lines.append(f"error_message: {trace.error_message}")
+        lines.append(f"main_reason: {trace.error_message}")
+    if evaluation is None:
+        lines.append(
+            "next_step: this replayed trace has no stored checks; if you ran 'ase test', "
+            f"use 'ase history --trace-id {trace.trace_id}'"
+        )
     return "\n".join(lines)
 
 
@@ -109,16 +113,15 @@ def _to_markdown(trace: Trace) -> str:
     evaluation = trace.evaluation
     runtime = trace.runtime_provenance
     execution_status = trace.status.value
-    evaluation_status = _evaluation_status(trace)
+    checks_status = _checks_status(trace)
     lines = [
-        "# ASE Trace Report",
+        "# ASE Run Report",
         "",
-        f"- Trace ID: `{trace.trace_id}`",
+        f"- Run ID: `{trace.trace_id}`",
         f"- Scenario: `{trace.scenario_id}`",
-        f"- Status: `{trace.status}`",
-        f"- Execution: `{execution_status}`",
-        f"- Evaluation: `{evaluation_status}`",
-        f"- Runtime: `{runtime.mode if runtime else 'unknown'}`",
+        f"- Run result: `{execution_status}`",
+        f"- ASE checks: `{checks_status}`",
+        f"- Run type: `{runtime.mode if runtime else 'unknown'}`",
         f"- Framework: `{runtime.framework if runtime and runtime.framework else 'unknown'}`",
         f"- Tool calls: `{trace.metrics.total_tool_calls}`",
     ]
@@ -131,7 +134,11 @@ def _to_markdown(trace: Trace) -> str:
                 + "`"
             )
     if trace.error_message:
-        lines.append(f"- Error: `{trace.error_message}`")
+        lines.append(f"- Main reason: `{trace.error_message}`")
+    lines.extend(["", "## What Happened"])
+    lines.extend(f"- {item}" for item in _what_happened(trace))
+    lines.extend(["", "## Suggested Next Step"])
+    lines.append(f"- { _next_step(trace) }")
     return "\n".join(lines)
 
 
@@ -152,3 +159,38 @@ def _evaluation_status(trace: Trace) -> str:
     if trace.evaluation is None:
         return "unknown"
     return "passed" if trace.evaluation.passed else "failed"
+
+
+def _checks_status(trace: Trace) -> str:
+    """Return a user-facing checks status string for stored or replayed traces."""
+    if trace.evaluation is None:
+        return "not included in this trace"
+    return "passed" if trace.evaluation.passed else "failed"
+
+
+def _what_happened(trace: Trace) -> list[str]:
+    """Build a short narrative summary for operator-facing reports."""
+    items = [
+        f"ASE observed {trace.metrics.total_tool_calls} tool call(s).",
+    ]
+    if trace.evaluation is None:
+        items.append("This report came from a replayed trace, so ASE checks are not attached here.")
+    elif trace.evaluation.passed:
+        items.append("ASE checks passed on the stored run.")
+    else:
+        items.append("ASE checks failed on the stored run.")
+    if trace.status.value == "passed":
+        items.append("The agent run completed successfully.")
+    else:
+        items.append(f"The agent run ended with status '{trace.status.value}'.")
+    return items
+
+
+def _next_step(trace: Trace) -> str:
+    """Suggest the next most helpful command for understanding a run."""
+    if trace.evaluation is None:
+        return (
+            "If this came from `ase test`, run "
+            f"`ase history --trace-id {trace.trace_id}` to view the stored evaluated run."
+        )
+    return f"Run `ase history --trace-id {trace.trace_id}` for the full stored run details."

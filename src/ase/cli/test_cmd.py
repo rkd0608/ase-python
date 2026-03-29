@@ -137,23 +137,32 @@ def _filter_by_tags(paths: list[Path], tags: list[str]) -> list[Path]:
         if requested.intersection(set(scenario.tags)):
             filtered.append(path)
     return filtered
+
+
 def _render_summary(trace: object, summary: object) -> None:
-    """Print an operator-facing outcome with separate evaluation and execution states."""
+    """Print a user-facing outcome block with the next best follow-up command."""
     trace_id = getattr(trace, "trace_id", "unknown")
     scenario_id = getattr(trace, "scenario_id", "unknown")
     passed = getattr(summary, "passed", False)
     score = getattr(summary, "ase_score", 0.0)
     execution = getattr(getattr(trace, "status", None), "value", "unknown")
-    evaluation = "passed" if passed else "failed"
+    checks = _checks_status(summary)
     overall_passed = passed and execution == "passed"
     status = "[green]PASS[/green]" if overall_passed else "[red]FAIL[/red]"
-    _console.print(
-        f"{status} {scenario_id} trace={trace_id} ase_score={score:.2f} "
-        f"evaluation={evaluation} execution={execution}"
-    )
+    _console.print(f"{status} {scenario_id}")
+    _console.print(f"  Run ID: {trace_id}")
+    _console.print(f"  ASE score: {score:.2f}")
+    _console.print(f"  Run result: {execution}")
+    _console.print(f"  ASE checks: {checks}")
     reason = _failure_reason(trace, summary)
     if reason is not None:
-        _console.print(f"  [yellow]reason:[/yellow] {reason}")
+        _console.print(f"  [yellow]Why it failed:[/yellow] {reason}")
+    elif overall_passed:
+        _console.print("  Why it passed: The agent run completed and ASE checks passed.")
+    _console.print("  What happened:")
+    for item in _what_happened(trace, summary):
+        _console.print(f"  - {item}")
+    _console.print(f"  Next: ase history --trace-id {trace_id}")
 
 
 def _compiled_assertions(
@@ -179,11 +188,35 @@ def _failure_reason(trace: object, summary: object) -> str | None:
     if execution != "passed":
         error_message = getattr(trace, "error_message", None)
         if isinstance(error_message, str) and error_message.strip():
-            return f"execution failed: {error_message.strip()}"
-        return f"execution failed: status={execution}"
+            return error_message.strip()
+        return f"The agent run ended with status '{execution}'."
     if getattr(summary, "passed", False):
         return None
     failing = getattr(summary, "failing_evaluators", []) or []
     if failing:
-        return "evaluation failed: " + ", ".join(str(item) for item in failing)
-    return "evaluation failed"
+        return "ASE checks failed: " + ", ".join(str(item) for item in failing)
+    return "ASE checks failed."
+
+
+def _checks_status(summary: object) -> str:
+    """Render a compact user-facing checks summary."""
+    passed = bool(getattr(summary, "passed", False))
+    passed_count = int(getattr(summary, "passed_count", 0))
+    total = int(getattr(summary, "total", 0))
+    state = "passed" if passed else "failed"
+    return f"{state} ({passed_count}/{total})"
+
+
+def _what_happened(trace: object, summary: object) -> list[str]:
+    """Explain the run outcome in plain language."""
+    execution = getattr(getattr(trace, "status", None), "value", "unknown")
+    if execution == "passed":
+        run_note = "The agent run completed successfully."
+    else:
+        run_note = f"The agent run ended with status '{execution}'."
+    checks_note = (
+        "ASE checks passed."
+        if bool(getattr(summary, "passed", False))
+        else "ASE checks failed."
+    )
+    return [run_note, checks_note]

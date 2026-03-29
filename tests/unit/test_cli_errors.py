@@ -65,8 +65,10 @@ def test_test_empty_assertions_can_still_complete_without_traceback(tmp_path: Pa
     output = _combined_output(result)
     assert result.exit_code == 0, output
     assert "PASS empty-assertions" in output
-    assert "evaluation=passed" in output
-    assert "execution=passed" in output
+    assert "Run result: passed" in output
+    assert "ASE checks: passed (0/0)" in output
+    assert "What happened:" in output
+    assert "Next: ase history --trace-id" in output
     assert "Traceback" not in output
 
 
@@ -131,5 +133,9 @@ def test_render_summary_marks_execution_failure_as_fail() -> None:
     finally:
         test_cmd._console = original_console
     assert "FAIL scenario-x" in output
-    assert "evaluation=passed execution=failed" in output
-    assert "reason: execution failed: browser-use judge rejected result" in output
+    assert "Run result: failed" in output
+    assert "ASE checks: passed (0/0)" in output
+    assert "Why it failed: browser-use judge rejected result" in output
+    assert "What happened:" in output
+    assert "ASE checks passed." in output
+    assert "Next: ase history --trace-id trace-x" in output

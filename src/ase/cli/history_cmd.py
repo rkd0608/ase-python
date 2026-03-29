@@ -48,11 +48,12 @@ async def _show_trace(store: TraceStore, trace_id: str) -> None:
     if trace is None:
         _console.print(f"[red]Trace not found: {trace_id}[/red]")
         raise typer.Exit(code=1)
-    _console.print(f"\n[bold]Trace:[/bold] {trace.trace_id}")
+    _console.print(f"\n[bold]Run:[/bold] {trace.trace_id}")
     _console.print(f"Scenario: {trace.scenario_id} — {trace.scenario_name}")
-    _console.print(f"Execution:  [bold]{trace.status.value}[/bold]")
-    _console.print(f"Evaluation: [bold]{_evaluation_status(trace)}[/bold]")
-    _console.print(f"Runtime:    [bold]{_runtime_label(trace)}[/bold]")
+    _console.print(f"Run result: [bold]{trace.status.value}[/bold]")
+    _console.print(f"ASE checks: [bold]{_evaluation_status(trace)}[/bold]")
+    _console.print(f"Run type:   [bold]{_runtime_mode(trace)}[/bold]")
+    _console.print(f"Framework:  [bold]{_framework_label(trace)}[/bold]")
     if trace.certification_level is not None:
         _console.print(f"Certified:  {trace.certification_level.value}")
     if trace.evaluation is not None:
@@ -60,7 +61,10 @@ async def _show_trace(store: TraceStore, trace_id: str) -> None:
     _console.print(f"Duration:   {trace.metrics.total_duration_ms:.0f}ms")
     _console.print(f"Tool calls: {trace.metrics.total_tool_calls}")
     if trace.error_message:
-        _console.print(f"\n[red]Error:[/red] {trace.error_message}")
+        _console.print(f"\n[red]Main reason:[/red] {trace.error_message}")
+    _console.print("\n[bold]What happened:[/bold]")
+    for item in _what_happened(trace):
+        _console.print(f"- {item}")
     if trace.stderr_output:
         _console.print(f"\n[yellow]Stderr:[/yellow]\n{trace.stderr_output}")
 
@@ -77,11 +81,12 @@ async def _list_traces(
         _console.print("[yellow]No traces found.[/yellow]")
         return
     table = Table(title="Trace History", box=box.SIMPLE_HEAD, expand=False)
-    table.add_column("Trace ID", style="dim", no_wrap=True)
+    table.add_column("Run ID", style="dim", no_wrap=True)
     table.add_column("Scenario", style="bold")
-    table.add_column("Runtime")
-    table.add_column("Evaluation")
-    table.add_column("Execution")
+    table.add_column("Run type")
+    table.add_column("Framework")
+    table.add_column("ASE checks")
+    table.add_column("Run result")
     table.add_column("Certified")
     table.add_column("Score", justify="right")
     table.add_column("Started At")
@@ -91,6 +96,7 @@ async def _list_traces(
             row["trace_id"][:26],
             row["scenario_id"],
             row.get("runtime_mode") or "unknown",
+            row.get("framework") or "unknown",
             row["evaluation_status"] or "unknown",
             row["status"],
             row.get("certification_level") or "—",
@@ -116,11 +122,31 @@ def _evaluation_status(trace: Trace) -> str:
     return "passed" if trace.evaluation.passed else "failed"
 
 
-def _runtime_label(trace: Trace) -> str:
-    """Return a compact runtime label for trace detail views."""
+def _runtime_mode(trace: Trace) -> str:
+    """Return the high-level run type for a stored trace."""
     if trace.runtime_provenance is None:
         return "unknown"
-    framework = trace.runtime_provenance.framework
-    if framework:
-        return f"{trace.runtime_provenance.mode} ({framework})"
     return trace.runtime_provenance.mode
+
+
+def _framework_label(trace: Trace) -> str:
+    """Return the framework name for a stored trace."""
+    if trace.runtime_provenance is None:
+        return "unknown"
+    return trace.runtime_provenance.framework or "unknown"
+
+
+def _what_happened(trace: Trace) -> list[str]:
+    """Build a short plain-language summary for one stored run."""
+    items = []
+    if trace.status.value == "passed":
+        items.append("The agent run completed successfully.")
+    else:
+        items.append(f"The agent run ended with status '{trace.status.value}'.")
+    if trace.evaluation is None:
+        items.append("ASE checks are not attached to this run.")
+    elif trace.evaluation.passed:
+        items.append("ASE checks passed.")
+    else:
+        items.append("ASE checks failed.")
+    return items
